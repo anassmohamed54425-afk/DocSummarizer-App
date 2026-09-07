@@ -4,11 +4,6 @@ import io
 import re
 from docx import Document
 import datetime
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
-import arabic_reshaper
-from bidi.algorithm import get_display
 
 # ========================================
 # إعدادات الصفحة
@@ -108,6 +103,18 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
+    
+    .report-box {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 12px;
+        border-right: 4px solid #667eea;
+        direction: rtl;
+        text-align: right;
+        font-family: 'Cairo', sans-serif;
+        line-height: 1.8;
+        font-size: 16px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -126,7 +133,7 @@ with st.sidebar:
             <li>📝 تلخيص ذكي</li>
             <li>🏷️ تصنيف تلقائي</li>
             <li>📊 إحصائيات متقدمة</li>
-            <li>📥 تصدير PDF و TXT</li>
+            <li>📥 تصدير تقرير منسق</li>
         </ul>
         <hr>
         <h4>📌 الإصدار</h4>
@@ -140,7 +147,7 @@ with st.sidebar:
 st.markdown("""
 <div class="main-header">
     <h1>📄 ملخص المستندات الذكي</h1>
-    <p>رفع ملف، تلخيص، تصنيف، وتقرير PDF</p>
+    <p>رفع ملف، تلخيص، تصنيف، وتقرير منسق</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -235,76 +242,6 @@ def classify_text(text):
     confidence = best_score / max_possible if max_possible > 0 else 0
     
     return best_category, min(confidence, 0.95)
-
-# ========================================
-# دالة إنشاء PDF (باستخدام reportlab مع دعم العربية)
-# ========================================
-def create_pdf(text, summary, label, score, word_count, char_count, sentence_count):
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
-    
-    def format_arabic(txt):
-        try:
-            reshaped = arabic_reshaper.reshape(txt)
-            return get_display(reshaped)
-        except:
-            return txt
-    
-    font_name = 'Helvetica'
-    
-    # العنوان
-    c.setFont(font_name, 20)
-    c.drawString(2*cm, height - 2*cm, format_arabic("تقرير تحليل المستند"))
-    c.line(2*cm, height - 2.5*cm, width - 2*cm, height - 2.5*cm)
-    
-    # التاريخ
-    c.setFont(font_name, 12)
-    c.drawString(2*cm, height - 3.5*cm, format_arabic(f"التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"))
-    
-    # النتيجة
-    c.setFont(font_name, 14)
-    c.drawString(2*cm, height - 5*cm, format_arabic(f"التصنيف: {label}"))
-    c.drawString(2*cm, height - 6*cm, format_arabic(f"نسبة الثقة: {score:.2%}"))
-    c.drawString(2*cm, height - 7*cm, format_arabic(f"عدد الكلمات: {word_count}"))
-    c.drawString(2*cm, height - 8*cm, format_arabic(f"عدد الأحرف: {char_count}"))
-    c.drawString(2*cm, height - 9*cm, format_arabic(f"عدد الجمل: {sentence_count}"))
-    
-    # الملخص
-    c.setFont(font_name, 12)
-    c.drawString(2*cm, height - 11*cm, format_arabic("الملخص:"))
-    
-    y = height - 12*cm
-    for line in summary.split('\n'):
-        if y < 2*cm:
-            c.showPage()
-            y = height - 2*cm
-        if len(line) > 80:
-            line = line[:80] + "..."
-        c.drawString(2*cm, y, format_arabic(line))
-        y -= 0.6*cm
-    
-    # النص الأصلي (مختصر)
-    c.setFont(font_name, 10)
-    c.drawString(2*cm, y - 1*cm, format_arabic("النص الأصلي (مختصر):"))
-    y -= 1.5*cm
-    
-    for line in text[:500].split('\n'):
-        if y < 2*cm:
-            c.showPage()
-            y = height - 2*cm
-        if len(line) > 80:
-            line = line[:80] + "..."
-        c.drawString(2*cm, y, format_arabic(line))
-        y -= 0.5*cm
-    
-    # التذييل
-    c.setFont(font_name, 10)
-    c.drawString(2*cm, 2*cm, format_arabic("تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي"))
-    
-    c.save()
-    buffer.seek(0)
-    return buffer
 
 # ========================================
 # واجهة المستخدم
@@ -412,66 +349,69 @@ if uploaded_file is not None:
         """, unsafe_allow_html=True)
 
     # ========================================
-    # تحميل التقرير (PDF + TXT)
+    # تحميل التقرير (TXT)
     # ========================================
     st.markdown("---")
     st.subheader("📥 تحميل التقرير")
 
-    report_text = f"""
-    ═══════════════════════════════════════════════════════════════
-                          📄 تقرير تلخيص المستند
-    ═══════════════════════════════════════════════════════════════
+    # إنشاء التقرير بشكل منظم وجميل
+    report_lines = []
+    report_lines.append("")
+    report_lines.append("")
+    report_lines.append("╔══════════════════════════════════════════════════════════════════════════╗")
+    report_lines.append("║                           📄 تقرير تلخيص المستند                      ║")
+    report_lines.append("╚══════════════════════════════════════════════════════════════════════════╝")
+    report_lines.append("")
+    report_lines.append("")
+    report_lines.append(f"  📅 التاريخ  :  {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    report_lines.append("")
+    report_lines.append("  ═══════════════════════════════════════════════════════════════════════")
+    report_lines.append("")
+    report_lines.append(f"  🏷️ التصنيف      :  {label}")
+    report_lines.append(f"  📊 نسبة الثقة   :  {score:.2%}")
+    report_lines.append(f"  📝 عدد الكلمات  :  {word_count}")
+    report_lines.append(f"  🔤 عدد الأحرف   :  {char_count}")
+    report_lines.append(f"  📖 عدد الجمل    :  {sentence_count}")
+    report_lines.append("")
+    report_lines.append("  ═══════════════════════════════════════════════════════════════════════")
+    report_lines.append("")
+    report_lines.append("  📝 الملخص:")
+    report_lines.append("  ─────────────────────────────────────────────────────────────────────")
+    for line in summary.split('. '):
+        if line.strip():
+            report_lines.append(f"  • {line.strip()}.")
+    report_lines.append("")
+    report_lines.append("  ═══════════════════════════════════════════════════════════════════════")
+    report_lines.append("")
+    report_lines.append("  📄 النص الأصلي (مختصر):")
+    report_lines.append("  ─────────────────────────────────────────────────────────────────────")
+    text_preview = clean_text_content[:500]
+    if len(clean_text_content) > 500:
+        text_preview += "..."
+    for line in text_preview.split('\n'):
+        if line.strip():
+            report_lines.append(f"  {line.strip()}")
+    report_lines.append("")
+    report_lines.append("  ═══════════════════════════════════════════════════════════════════════")
+    report_lines.append("")
+    report_lines.append("  ✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي")
+    report_lines.append("  📌 v2.0 - AI Summarizer")
+    report_lines.append("")
+    report_lines.append("╔══════════════════════════════════════════════════════════════════════════╗")
+    report_lines.append("║                         نهاية التقرير                                  ║")
+    report_lines.append("╚══════════════════════════════════════════════════════════════════════════╝")
 
-    التصنيف: {label} (نسبة الثقة: {score:.2%})
-    عدد الكلمات: {word_count}
-    عدد الأحرف: {char_count}
-    عدد الجمل: {sentence_count}
+    report_text = "\n".join(report_lines)
 
-    ═══════════════════════════════════════════════════════════════
-    الملخص:
-    ═══════════════════════════════════════════════════════════════
+    # عرض التقرير بشكل منظم في الصفحة
+    st.markdown(f'<div class="report-box"><pre>{report_text}</pre></div>', unsafe_allow_html=True)
 
-    {summary}
-
-    ═══════════════════════════════════════════════════════════════
-    النص الأصلي (مختصر):
-    ═══════════════════════════════════════════════════════════════
-
-    {clean_text_content[:500]}{'...' if len(clean_text_content) > 500 else ''}
-
-    ═══════════════════════════════════════════════════════════════
-    ✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي
-    ═══════════════════════════════════════════════════════════════
-    """
-
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.download_button(
-            label="📥 تحميل التقرير (TXT)",
-            data=report_text,
-            file_name=f"تقرير_{uploaded_file.name}.txt",
-            mime="text/plain"
-        )
-    
-    with col2:
-        with st.spinner("⏳ جاري إنشاء PDF..."):
-            try:
-                pdf_buffer = create_pdf(
-                    clean_text_content, summary, label, score,
-                    word_count, char_count, sentence_count
-                )
-                if pdf_buffer:
-                    st.download_button(
-                        label="📥 تحميل التقرير (PDF)",
-                        data=pdf_buffer,
-                        file_name=f"تقرير_{uploaded_file.name}.pdf",
-                        mime="application/pdf"
-                    )
-                else:
-                    st.warning("⚠️ لا يمكن إنشاء PDF، استخدم TXT")
-            except Exception as e:
-                st.error(f"❌ مشكلة في إنشاء PDF: {str(e)}")
+    st.download_button(
+        label="📥 تحميل التقرير",
+        data=report_text,
+        file_name=f"تقرير_{uploaded_file.name}.txt",
+        mime="text/plain"
+    )
 
 else:
     st.info("⏳ انتظر رفع ملف لتحليله")
@@ -480,5 +420,5 @@ else:
     1. اضغط على زر **"اختر ملف"**
     2. اختر ملف `.txt` أو `.pdf` أو `.docx`
     3. انتظر لحظات وستظهر النتيجة
-    4. يمكنك تحميل التقرير بصيغة TXT أو PDF
+    4. يمكنك تحميل التقرير
     """)
