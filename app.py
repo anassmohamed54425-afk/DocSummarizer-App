@@ -21,25 +21,156 @@ st.set_page_config(
     layout="wide"
 )
 
+# ========================================
+# CSS للشكل الاحترافي
+# ========================================
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+    
+    * {
+        font-family: 'Cairo', sans-serif;
+    }
+    
     .main-header {
-        background: linear-gradient(135deg, #4A6CF7, #6C4AF7);
-        padding: 30px;
-        border-radius: 15px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 40px;
+        border-radius: 20px;
         text-align: center;
         color: white;
         margin-bottom: 30px;
+        box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+    }
+    
+    .main-header h1 {
+        font-size: 48px;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .main-header p {
+        font-size: 18px;
+        opacity: 0.9;
+        margin: 10px 0 0;
+    }
+    
+    .result-card {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        margin: 20px 0;
+        border-right: 6px solid #667eea;
+        transition: transform 0.2s;
+    }
+    
+    .result-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+    
+    .metric-box {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        transition: all 0.2s;
+    }
+    
+    .metric-box:hover {
+        background: #e9ecef;
+        transform: scale(1.02);
+    }
+    
+    .metric-box .value {
+        font-size: 28px;
+        font-weight: 700;
+        color: #2d3436;
+    }
+    
+    .metric-box .label {
+        font-size: 14px;
+        color: #636e72;
+        margin-top: 5px;
+    }
+    
+    .upload-section {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        text-align: center;
+        border: 2px dashed #667eea;
+        margin-bottom: 20px;
+        transition: all 0.3s;
+    }
+    
+    .upload-section:hover {
+        border-color: #764ba2;
+        background: #f8f9ff;
+    }
+    
+    .stButton > button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 16px;
+        transition: all 0.3s;
+        width: 100%;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    .sidebar-content {
+        padding: 20px 10px;
+    }
+    
+    .sidebar-content h3 {
+        color: #2d3436;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
 
+# ========================================
+# الشريط الجانبي
+# ========================================
+with st.sidebar:
+    st.markdown("""
+    <div class="sidebar-content">
+        <h3>📊 تحليل المستندات</h3>
+        <p style="color: #636e72; font-size: 14px;">
+            تطبيق ذكي لتحليل وتلخيص المستندات النصية
+        </p>
+        <hr>
+        <h4>⚡ الميزات</h4>
+        <ul style="color: #2d3436; font-size: 14px; list-style: none; padding: 0;">
+            <li>📄 قراءة TXT, PDF, DOCX</li>
+            <li>📝 تلخيص ذكي</li>
+            <li>🏷️ تصنيف تلقائي</li>
+            <li>📊 إحصائيات متقدمة</li>
+            <li>📥 تصدير PDF و TXT</li>
+        </ul>
+        <hr>
+        <h4>📌 الإصدار</h4>
+        <p style="color: #636e72; font-size: 12px;">v2.0 - AI Summarizer</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ========================================
+# رأس الصفحة
+# ========================================
 st.markdown("""
 <div class="main-header">
-    <h1 style="font-size: 40px; margin: 0;">📄 ملخص المستندات الذكي</h1>
-    <p style="font-size: 18px; opacity: 0.9; margin: 10px 0 0;">
-        رفع ملف، تلخيص، تصنيف، وتقرير PDF
-    </p>
+    <h1>📄 ملخص المستندات الذكي</h1>
+    <p>رفع ملف، تلخيص، تصنيف، وتقرير PDF</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -224,7 +355,7 @@ if uploaded_file is not None:
     # ========================================
     # التلخيص
     # ========================================
-    st.divider()
+    st.markdown("---")
     st.subheader("📝 الملخص")
 
     if len(clean_text_content.split()) < 50:
@@ -239,12 +370,16 @@ if uploaded_file is not None:
                 st.error(f"❌ مش قادر ألخص النص: {str(e)}")
                 summary = clean_text_content
 
-    st.write(summary)
+    st.markdown(f"""
+    <div class="result-card">
+        {summary}
+    </div>
+    """, unsafe_allow_html=True)
 
     # ========================================
     # التصنيف
     # ========================================
-    st.divider()
+    st.markdown("---")
     st.subheader("🏷️ التصنيف")
 
     with st.spinner("⏳ جاري تصنيف النص..."):
@@ -258,14 +393,24 @@ if uploaded_file is not None:
 
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("التصنيف", label)
+        st.markdown(f"""
+        <div class="metric-box">
+            <div class="value">{label}</div>
+            <div class="label">التصنيف</div>
+        </div>
+        """, unsafe_allow_html=True)
     with col2:
-        st.metric("نسبة الثقة", f"{score:.2%}")
+        st.markdown(f"""
+        <div class="metric-box">
+            <div class="value">{score:.2%}</div>
+            <div class="label">نسبة الثقة</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     # ========================================
     # إحصائيات
     # ========================================
-    st.divider()
+    st.markdown("---")
     st.subheader("📊 إحصائيات")
 
     word_count = len(clean_text_content.split())
@@ -274,16 +419,31 @@ if uploaded_file is not None:
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.metric("عدد الكلمات", word_count)
+        st.markdown(f"""
+        <div class="metric-box">
+            <div class="value">{word_count}</div>
+            <div class="label">عدد الكلمات</div>
+        </div>
+        """, unsafe_allow_html=True)
     with col2:
-        st.metric("عدد الأحرف", char_count)
+        st.markdown(f"""
+        <div class="metric-box">
+            <div class="value">{char_count}</div>
+            <div class="label">عدد الأحرف</div>
+        </div>
+        """, unsafe_allow_html=True)
     with col3:
-        st.metric("عدد الجمل", sentence_count)
+        st.markdown(f"""
+        <div class="metric-box">
+            <div class="value">{sentence_count}</div>
+            <div class="label">عدد الجمل</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     # ========================================
     # تحميل التقرير (PDF + TXT)
     # ========================================
-    st.divider()
+    st.markdown("---")
     st.subheader("📥 تحميل التقرير")
 
     report_text = f"""
