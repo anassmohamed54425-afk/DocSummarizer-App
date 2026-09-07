@@ -85,25 +85,6 @@ st.markdown("""
     .test-high { border-right-color: #e74c3c !important; }
     .test-low { border-right-color: #f39c12 !important; }
     
-    .report-page {
-        background: var(--secondary-background-color);
-        padding: 40px;
-        border-radius: 20px;
-        box-shadow: 0 8px 40px rgba(0,0,0,0.08);
-        border: 1px solid var(--border-color);
-        direction: rtl;
-        text-align: right;
-        font-family: 'Cairo', sans-serif;
-        margin: 20px 0;
-        color: var(--text-color);
-    }
-    .report-page h2 { color: var(--text-color); border-bottom: 3px solid #667eea; padding-bottom: 15px; margin-bottom: 20px; text-align: center; }
-    .report-page h3 { color: var(--text-color); margin-top: 20px; }
-    .report-page hr { border: 1px solid var(--border-color); margin: 15px 0; }
-    .report-page .footer { text-align: center; color: var(--text-color); opacity: 0.7; font-size: 14px; border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 20px; }
-    .report-page ul { list-style: none; padding: 0; }
-    .report-page ul li::before { content: "• "; color: #667eea; font-weight: bold; }
-    
     .email-card {
         background: var(--secondary-background-color);
         padding: 20px;
@@ -315,22 +296,18 @@ def extract_lab_tests(text):
 
 def extract_emails(text):
     """استخراج الإيميلات من النص"""
-    # تقسيم النص إلى إيميلات (بافتراض أن كل إيميل يبدأ بـ From: أو Subject:)
     email_pattern = r'(?:From|Subject|To|Date|Message)[:\s]+.*?(?=(?:From|Subject|To|Date|Message)|\Z)'
     emails_raw = re.findall(email_pattern, text, re.DOTALL | re.IGNORECASE)
     
     if not emails_raw:
-        # لو مش لاقي، حاول تقسم على السطور الفارغة
         emails_raw = re.split(r'\n\s*\n', text)
     
     emails = []
     for email_text in emails_raw:
         if len(email_text.strip()) > 20:
-            # استخراج الموضوع
             subject_match = re.search(r'Subject[:\s]+(.*?)(?:\n|$)', email_text, re.IGNORECASE)
             subject = subject_match.group(1).strip() if subject_match else "بدون موضوع"
             
-            # استخراج النص الأساسي (شيل الرأس)
             body = re.sub(r'(From|Subject|To|Date|Message)[:\s]+.*?\n', '', email_text, flags=re.IGNORECASE)
             body = body.strip()
             
@@ -344,7 +321,6 @@ def extract_emails(text):
     return emails
 
 def classify_email(text):
-    """تصنيف الإيميل (شكوى، استفسار، طلب، رد، إلخ)"""
     text_lower = text.lower()
     
     complaint_keywords = ['شكوى', 'مشكلة', 'خطأ', 'تأخر', 'سيء', 'غير راض', 'فشل', 'عطل']
@@ -368,8 +344,79 @@ def classify_email(text):
     return "أخرى", "email-other"
 
 def summarize_email(text, num_sentences=3):
-    """تلخيص الإيميل"""
     return summarize_text(text, num_sentences)
+
+# ========================================
+# دالة عرض التقرير الجميل
+# ========================================
+def display_report(summary, label, score, word_count, char_count, sentence_count, clean_text_content):
+    report_html = f"""
+    <div style="
+        background: var(--secondary-background-color);
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border-right: 5px solid #667eea;
+        direction: rtl;
+        text-align: right;
+        font-family: 'Cairo', sans-serif;
+        max-width: 900px;
+        margin: 0 auto;
+        color: var(--text-color);
+    ">
+        <h2 style="text-align: center; color: var(--text-color); border-bottom: 3px solid #667eea; padding-bottom: 15px; margin-bottom: 20px;">
+            📄 تقرير تلخيص المستند
+        </h2>
+        
+        <p style="text-align: center; color: var(--text-color); opacity: 0.7; font-size: 14px; margin-bottom: 20px;">
+            التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        </p>
+        
+        <div style="
+            background: var(--secondary-background-color);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 1px solid var(--border-color);
+        ">
+            <p style="margin: 5px 0;"><strong>🏷️ التصنيف:</strong> {label}</p>
+            <p style="margin: 5px 0;"><strong>📊 نسبة الثقة:</strong> {score:.2%}</p>
+            <p style="margin: 5px 0;"><strong>📝 عدد الكلمات:</strong> {word_count}</p>
+            <p style="margin: 5px 0;"><strong>🔤 عدد الأحرف:</strong> {char_count}</p>
+            <p style="margin: 5px 0;"><strong>📖 عدد الجمل:</strong> {sentence_count}</p>
+        </div>
+        
+        <div style="
+            background: var(--secondary-background-color);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-right: 4px solid #667eea;
+            border: 1px solid var(--border-color);
+        ">
+            <p style="font-weight: bold; margin: 0 0 5px 0;">📝 الملخص:</p>
+            <p style="margin: 0; line-height: 1.8; color: var(--text-color);">{summary}</p>
+        </div>
+        
+        <div style="
+            background: var(--secondary-background-color);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-right: 4px solid #667eea;
+            border: 1px solid var(--border-color);
+        ">
+            <p style="font-weight: bold; margin: 0 0 5px 0;">📄 النص الأصلي (مختصر):</p>
+            <p style="margin: 0; line-height: 1.8; color: var(--text-color);">{clean_text_content[:500]}{'...' if len(clean_text_content) > 500 else ''}</p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); color: var(--text-color); opacity: 0.7; font-size: 12px;">
+            ✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي<br>
+            📌 v2.2 - AI Summarizer
+        </div>
+    </div>
+    """
+    return report_html
 
 # ========================================
 # واجهة المستخدم (تبويبات)
@@ -484,53 +531,15 @@ with tab1:
             """, unsafe_allow_html=True)
 
         # ========================================
-        # التقرير النهائي
+        # عرض التقرير الجميل
         # ========================================
         st.markdown("---")
         st.subheader("📄 التقرير النهائي")
 
-        report_md = f"""
-<div class="report-page">
-
-## 📄 تقرير تلخيص المستند
-
-**📅 التاريخ:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
----
-
-**🏷️ التصنيف:** {label}  
-**📊 نسبة الثقة:** {score:.2%}  
-**📝 عدد الكلمات:** {word_count}  
-**🔤 عدد الأحرف:** {char_count}  
-**📖 عدد الجمل:** {sentence_count}
-
----
-
-### 📝 الملخص
-
-"""
-        for s in summary.replace('؟', '.').split('. '):
-            if s.strip():
-                report_md += f"- {s.strip()}.\n"
-
-        report_md += f"""
----
-
-### 📄 النص الأصلي (مختصر)
-
-{clean_text_content[:500]}{'...' if len(clean_text_content) > 500 else ''}
-
----
-
-<div class="footer">
-✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي<br>
-📌 v2.2 - AI Summarizer + Lab Analyzer + Email Summarizer
-</div>
-
-</div>
-"""
-
-        st.markdown(report_md, unsafe_allow_html=True)
+        report_html = display_report(
+            summary, label, score, word_count, char_count, sentence_count, clean_text_content
+        )
+        st.markdown(report_html, unsafe_allow_html=True)
 
         # ========================================
         # تحميل التقرير
@@ -763,9 +772,7 @@ with tab3:
         else:
             email_summaries = []
             for i, email in enumerate(emails):
-                # تلخيص الإيميل
                 summary = summarize_email(email['body'], num_sentences=3)
-                # تصنيف الإيميل
                 classification, class_name = classify_email(email['body'])
                 
                 email_summaries.append({
@@ -854,10 +861,3 @@ with tab3:
 
     else:
         st.info("⏳ انتظر رفع ملف إيميلات لتحليله")
-        st.markdown("""
-        ### 🚀 طريقة الاستخدام:
-        1. اضغط على زر **"اختر ملف إيميلات"**
-        2. اختر ملف `.txt` أو `.pdf` أو `.docx`
-        3. انتظر لحظات وستظهر الإيميلات مع التلخيص والتصنيف
-        4. يمكنك تحميل التقرير
-        """)
