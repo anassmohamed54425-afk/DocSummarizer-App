@@ -90,22 +90,6 @@ st.markdown("""
         margin-top: 5px;
     }
     
-    .upload-section {
-        background: white;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        text-align: center;
-        border: 2px dashed #667eea;
-        margin-bottom: 20px;
-        transition: all 0.3s;
-    }
-    
-    .upload-section:hover {
-        border-color: #764ba2;
-        background: #f8f9ff;
-    }
-    
     .stButton > button {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -251,7 +235,7 @@ def classify_text(text):
     return best_category, min(confidence, 0.95)
 
 # ========================================
-# دالة إنشاء PDF (باستخدام fpdf2)
+# دالة إنشاء PDF (باستخدام fpdf2 مع دعم العربية)
 # ========================================
 def create_pdf(text, summary, label, score, word_count, char_count, sentence_count):
     class PDF(FPDF):
@@ -273,14 +257,22 @@ def create_pdf(text, summary, label, score, word_count, char_count, sentence_cou
     
     # محاولة إضافة خط عربي
     try:
+        # استخدام DejaVu (مدمج في fpdf2)
         pdf.add_font('DejaVu', '', 'DejaVuSans.ttf', uni=True)
         font_name = 'DejaVu'
     except:
         try:
+            # محاولة استخدام Arial Unicode
             pdf.add_font('ArialUnicode', '', 'ArialUnicodeMS.ttf', uni=True)
             font_name = 'ArialUnicode'
         except:
-            font_name = 'Arial'
+            try:
+                # محاولة استخدام NotoSans
+                pdf.add_font('NotoSans', '', 'NotoSans-Regular.ttf', uni=True)
+                font_name = 'NotoSans'
+            except:
+                # لو كل حاجة فشلت، استخدم Helvetica (مش هيدعم العربية)
+                font_name = 'Helvetica'
     
     pdf.set_font(font_name, size=12)
     
@@ -308,10 +300,10 @@ def create_pdf(text, summary, label, score, word_count, char_count, sentence_cou
     
     # حفظ PDF
     try:
-        pdf_output = pdf.output(dest='S').encode('latin1')
-        return io.BytesIO(pdf_output)
-    except:
-        # لو فشل، نرجع النص كـ TXT
+        pdf_output = pdf.output(dest='S')
+        return io.BytesIO(pdf_output.encode('latin1'))
+    except Exception as e:
+        st.error(f"❌ مشكلة في حفظ PDF: {str(e)}")
         return None
 
 # ========================================
