@@ -513,9 +513,9 @@ with tab1:
 # ========================================
 with tab2:
     st.markdown("""
-    <div style="background: #f0f4ff; padding: 15px; border-radius: 10px; border-right: 4px solid #667eea; margin-bottom: 20px;">
-        <h4 style="margin: 0; color: #2d3436;">🧪 تحليل المعامل الطبية</h4>
-        <p style="margin: 5px 0 0; color: #636e72; font-size: 14px;">ارفع تقرير معمل، وسيتم استخراج التحاليل وتقييمها</p>
+    <div style="background: var(--secondary-background-color); padding: 15px; border-radius: 10px; border-right: 4px solid #667eea; margin-bottom: 20px;">
+        <h4 style="margin: 0; color: var(--text-color);">🧪 تحليل المعامل الطبية</h4>
+        <p style="margin: 5px 0 0; color: var(--text-color); opacity: 0.7; font-size: 14px;">ارفع تقرير معمل، وسيتم استخراج التحاليل وتقييمها</p>
     </div>
     """, unsafe_allow_html=True)
 
