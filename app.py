@@ -3,14 +3,10 @@ import PyPDF2
 import io
 import re
 from docx import Document
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
 import datetime
 import arabic_reshaper
 from bidi.algorithm import get_display
+from fpdf import FPDF
 
 # ========================================
 # إعدادات الصفحة
@@ -126,16 +122,6 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
-    
-    .sidebar-content {
-        padding: 20px 10px;
-    }
-    
-    .sidebar-content h3 {
-        color: #2d3436;
-        border-bottom: 2px solid #667eea;
-        padding-bottom: 10px;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -144,11 +130,9 @@ st.markdown("""
 # ========================================
 with st.sidebar:
     st.markdown("""
-    <div class="sidebar-content">
-        <h3>📊 تحليل المستندات</h3>
-        <p style="color: #636e72; font-size: 14px;">
-            تطبيق ذكي لتحليل وتلخيص المستندات النصية
-        </p>
+    <div style="padding: 20px 10px;">
+        <h3 style="color: #2d3436; border-bottom: 2px solid #667eea; padding-bottom: 10px;">📊 تحليل المستندات</h3>
+        <p style="color: #636e72; font-size: 14px;">تطبيق ذكي لتحليل وتلخيص المستندات النصية</p>
         <hr>
         <h4>⚡ الميزات</h4>
         <ul style="color: #2d3436; font-size: 14px; list-style: none; padding: 0;">
@@ -267,73 +251,68 @@ def classify_text(text):
     return best_category, min(confidence, 0.95)
 
 # ========================================
-# دالة إنشاء PDF (مع دعم العربية)
+# دالة إنشاء PDF (باستخدام fpdf2)
 # ========================================
 def create_pdf(text, summary, label, score, word_count, char_count, sentence_count):
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
+    class PDF(FPDF):
+        def header(self):
+            self.set_font('Arial', 'B', 16)
+            self.cell(0, 10, 'تقرير تحليل المستند', 0, 1, 'C')
+            self.ln(5)
+    
+    pdf = PDF()
+    pdf.add_page()
     
     # دالة لتنسيق النص العربي
     def format_arabic(txt):
-        reshaped = arabic_reshaper.reshape(txt)
-        return get_display(reshaped)
+        try:
+            reshaped = arabic_reshaper.reshape(txt)
+            return get_display(reshaped)
+        except:
+            return txt
     
-    # استخدام Helvetica مع تنسيق عربي
-    font_name = 'Helvetica'
+    # محاولة إضافة خط عربي
+    try:
+        pdf.add_font('DejaVu', '', 'DejaVuSans.ttf', uni=True)
+        font_name = 'DejaVu'
+    except:
+        try:
+            pdf.add_font('ArialUnicode', '', 'ArialUnicodeMS.ttf', uni=True)
+            font_name = 'ArialUnicode'
+        except:
+            font_name = 'Arial'
     
-    # العنوان
-    c.setFont(font_name, 20)
-    c.drawString(2*cm, height - 2*cm, format_arabic("تقرير تحليل المستند"))
-    c.line(2*cm, height - 2.5*cm, width - 2*cm, height - 2.5*cm)
+    pdf.set_font(font_name, size=12)
     
     # التاريخ
-    c.setFont(font_name, 12)
-    c.drawString(2*cm, height - 3.5*cm, format_arabic(f"التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"))
+    pdf.cell(0, 10, format_arabic(f"التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"), 0, 1, 'C')
+    pdf.ln(5)
     
     # النتيجة
-    c.setFont(font_name, 14)
-    c.drawString(2*cm, height - 5*cm, format_arabic(f"التصنيف: {label}"))
-    c.drawString(2*cm, height - 6*cm, format_arabic(f"نسبة الثقة: {score:.2%}"))
-    c.drawString(2*cm, height - 7*cm, format_arabic(f"عدد الكلمات: {word_count}"))
-    c.drawString(2*cm, height - 8*cm, format_arabic(f"عدد الأحرف: {char_count}"))
-    c.drawString(2*cm, height - 9*cm, format_arabic(f"عدد الجمل: {sentence_count}"))
+    pdf.set_font(font_name, size=14)
+    pdf.cell(0, 10, format_arabic(f"التصنيف: {label}"), 0, 1, 'C')
+    pdf.cell(0, 10, format_arabic(f"نسبة الثقة: {score:.2%}"), 0, 1, 'C')
+    pdf.cell(0, 10, format_arabic(f"عدد الكلمات: {word_count}"), 0, 1, 'C')
+    pdf.cell(0, 10, format_arabic(f"عدد الأحرف: {char_count}"), 0, 1, 'C')
+    pdf.cell(0, 10, format_arabic(f"عدد الجمل: {sentence_count}"), 0, 1, 'C')
+    pdf.ln(5)
     
     # الملخص
-    c.setFont(font_name, 12)
-    c.drawString(2*cm, height - 11*cm, format_arabic("الملخص:"))
-    
-    y = height - 12*cm
-    for line in summary.split('\n'):
-        if y < 2*cm:
-            c.showPage()
-            y = height - 2*cm
-        if len(line) > 80:
-            line = line[:80] + "..."
-        c.drawString(2*cm, y, format_arabic(line))
-        y -= 0.6*cm
+    pdf.set_font(font_name, size=12)
+    pdf.multi_cell(0, 10, format_arabic(f"الملخص:\n{summary}"))
+    pdf.ln(5)
     
     # النص الأصلي (مختصر)
-    c.setFont(font_name, 10)
-    c.drawString(2*cm, y - 1*cm, format_arabic("النص الأصلي (مختصر):"))
-    y -= 1.5*cm
+    pdf.set_font(font_name, size=10)
+    pdf.multi_cell(0, 8, format_arabic(f"النص الأصلي (مختصر):\n{text[:500]}..."))
     
-    for line in text[:500].split('\n'):
-        if y < 2*cm:
-            c.showPage()
-            y = height - 2*cm
-        if len(line) > 80:
-            line = line[:80] + "..."
-        c.drawString(2*cm, y, format_arabic(line))
-        y -= 0.5*cm
-    
-    # التذييل
-    c.setFont(font_name, 10)
-    c.drawString(2*cm, 2*cm, format_arabic("تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي"))
-    
-    c.save()
-    buffer.seek(0)
-    return buffer
+    # حفظ PDF
+    try:
+        pdf_output = pdf.output(dest='S').encode('latin1')
+        return io.BytesIO(pdf_output)
+    except:
+        # لو فشل، نرجع النص كـ TXT
+        return None
 
 # ========================================
 # واجهة المستخدم
@@ -485,16 +464,22 @@ if uploaded_file is not None:
     
     with col2:
         with st.spinner("⏳ جاري إنشاء PDF..."):
-            pdf_buffer = create_pdf(
-                clean_text_content, summary, label, score,
-                word_count, char_count, sentence_count
-            )
-            st.download_button(
-                label="📥 تحميل التقرير (PDF)",
-                data=pdf_buffer,
-                file_name=f"تقرير_{uploaded_file.name}.pdf",
-                mime="application/pdf"
-            )
+            try:
+                pdf_buffer = create_pdf(
+                    clean_text_content, summary, label, score,
+                    word_count, char_count, sentence_count
+                )
+                if pdf_buffer:
+                    st.download_button(
+                        label="📥 تحميل التقرير (PDF)",
+                        data=pdf_buffer,
+                        file_name=f"تقرير_{uploaded_file.name}.pdf",
+                        mime="application/pdf"
+                    )
+                else:
+                    st.warning("⚠️ لا يمكن إنشاء PDF، استخدم TXT")
+            except Exception as e:
+                st.error(f"❌ مشكلة في إنشاء PDF: {str(e)}")
 
 else:
     st.info("⏳ انتظر رفع ملف لتحليله")
