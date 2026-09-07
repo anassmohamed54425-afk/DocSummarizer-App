@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 # ========================================
-# CSS للشكل الاحترافي (للواجهة بس)
+# CSS للشكل الاحترافي
 # ========================================
 st.markdown("""
 <style>
@@ -102,6 +102,21 @@ st.markdown("""
     .stButton > button:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* تنسيق التقرير النصي */
+    .report-container {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 15px;
+        border-right: 5px solid #667eea;
+        font-family: 'Courier New', monospace;
+        direction: rtl;
+        text-align: right;
+        font-size: 14px;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -381,8 +396,8 @@ if uploaded_file is not None:
 
     report_text = "\n".join(report_lines)
 
-    # عرض التقرير في الصفحة
-    st.text(report_text)
+    # عرض التقرير في صندوق منسق
+    st.markdown(f'<div class="report-container">{report_text}</div>', unsafe_allow_html=True)
 
     # ========================================
     # تحميل التقرير (TXT)
