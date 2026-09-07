@@ -347,6 +347,9 @@ def create_report_html(text, summary, label, score, word_count, char_count, sent
     if len(text) > 500:
         text_preview += "..."
     
+    # تنسيق النص الأصلي (تحويل الأسطر الجديدة إلى <br>)
+    text_preview_html = text_preview.replace('\n', '<br>')
+    
     html = f"""
     <div class="report-container">
         <div class="report-header">
@@ -389,7 +392,7 @@ def create_report_html(text, summary, label, score, word_count, char_count, sent
         <div class="report-section">
             <div class="report-section-title">📄 النص الأصلي (مختصر)</div>
             <div class="report-section-content">
-                {text_preview.replace(chr(10), '<br>')}
+                {text_preview_html}
             </div>
         </div>
         
@@ -508,7 +511,7 @@ if uploaded_file is not None:
         """, unsafe_allow_html=True)
 
     # ========================================
-    # عرض التقرير المنمنم
+    # عرض التقرير المنمنم (بشكل صحيح)
     # ========================================
     st.markdown("---")
     st.subheader("📄 التقرير النهائي")
@@ -519,7 +522,7 @@ if uploaded_file is not None:
         word_count, char_count, sentence_count
     )
     
-    # عرض التقرير
+    # ✅ عرض التقرير بشكل صحيح (st.markdown مع unsafe_allow_html=True)
     st.markdown(report_html, unsafe_allow_html=True)
 
     # ========================================
