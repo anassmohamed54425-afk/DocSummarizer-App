@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 # ========================================
-# CSS للشكل الاحترافي
+# CSS للشكل الاحترافي (للواجهة فقط)
 # ========================================
 st.markdown("""
 <style>
@@ -347,76 +347,44 @@ def summarize_email(text, num_sentences=3):
     return summarize_text(text, num_sentences)
 
 # ========================================
-# دالة عرض التقرير الجميل
+# عرض التقرير (Markdown فقط)
 # ========================================
 def display_report(summary, label, score, word_count, char_count, sentence_count, clean_text_content):
-    report_html = f"""
-    <div style="
-        background: var(--secondary-background-color);
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        border-right: 5px solid #667eea;
-        direction: rtl;
-        text-align: right;
-        font-family: 'Cairo', sans-serif;
-        max-width: 900px;
-        margin: 0 auto;
-        color: var(--text-color);
-    ">
-        <h2 style="text-align: center; color: var(--text-color); border-bottom: 3px solid #667eea; padding-bottom: 15px; margin-bottom: 20px;">
-            📄 تقرير تلخيص المستند
-        </h2>
-        
-        <p style="text-align: center; color: var(--text-color); opacity: 0.7; font-size: 14px; margin-bottom: 20px;">
-            التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-        </p>
-        
-        <div style="
-            background: var(--secondary-background-color);
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin: 15px 0;
-            border: 1px solid var(--border-color);
-        ">
-            <p style="margin: 5px 0;"><strong>🏷️ التصنيف:</strong> {label}</p>
-            <p style="margin: 5px 0;"><strong>📊 نسبة الثقة:</strong> {score:.2%}</p>
-            <p style="margin: 5px 0;"><strong>📝 عدد الكلمات:</strong> {word_count}</p>
-            <p style="margin: 5px 0;"><strong>🔤 عدد الأحرف:</strong> {char_count}</p>
-            <p style="margin: 5px 0;"><strong>📖 عدد الجمل:</strong> {sentence_count}</p>
-        </div>
-        
-        <div style="
-            background: var(--secondary-background-color);
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin: 15px 0;
-            border-right: 4px solid #667eea;
-            border: 1px solid var(--border-color);
-        ">
-            <p style="font-weight: bold; margin: 0 0 5px 0;">📝 الملخص:</p>
-            <p style="margin: 0; line-height: 1.8; color: var(--text-color);">{summary}</p>
-        </div>
-        
-        <div style="
-            background: var(--secondary-background-color);
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin: 15px 0;
-            border-right: 4px solid #667eea;
-            border: 1px solid var(--border-color);
-        ">
-            <p style="font-weight: bold; margin: 0 0 5px 0;">📄 النص الأصلي (مختصر):</p>
-            <p style="margin: 0; line-height: 1.8; color: var(--text-color);">{clean_text_content[:500]}{'...' if len(clean_text_content) > 500 else ''}</p>
-        </div>
-        
-        <div style="text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color); color: var(--text-color); opacity: 0.7; font-size: 12px;">
-            ✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي<br>
-            📌 v2.2 - AI Summarizer
-        </div>
-    </div>
-    """
-    return report_html
+    report_md = f"""
+### 📄 تقرير تلخيص المستند
+
+**📅 التاريخ:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+---
+
+**🏷️ التصنيف:** {label}  
+**📊 نسبة الثقة:** {score:.2%}  
+**📝 عدد الكلمات:** {word_count}  
+**🔤 عدد الأحرف:** {char_count}  
+**📖 عدد الجمل:** {sentence_count}
+
+---
+
+### 📝 الملخص
+
+"""
+    for s in summary.replace('؟', '.').split('. '):
+        if s.strip():
+            report_md += f"- {s.strip()}.\n"
+
+    report_md += f"""
+---
+
+### 📄 النص الأصلي (مختصر)
+
+{clean_text_content[:500]}{'...' if len(clean_text_content) > 500 else ''}
+
+---
+
+✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي  
+📌 v2.2 - AI Summarizer
+"""
+    return report_md
 
 # ========================================
 # واجهة المستخدم (تبويبات)
@@ -531,16 +499,15 @@ with tab1:
             """, unsafe_allow_html=True)
 
         # ========================================
-        # عرض التقرير الجميل
+        # عرض التقرير (Markdown)
         # ========================================
         st.markdown("---")
         st.subheader("📄 التقرير النهائي")
 
-        report_html = display_report(
+        report_md = display_report(
             summary, label, score, word_count, char_count, sentence_count, clean_text_content
         )
-        # ✅ استخدام st.markdown مع unsafe_allow_html=True عشان يظهر بشكل صحيح
-        st.markdown(report_html, unsafe_allow_html=True)
+        st.markdown(report_md)
 
         # ========================================
         # تحميل التقرير
