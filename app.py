@@ -15,12 +15,13 @@ st.set_page_config(
 )
 
 # ========================================
-# CSS للشكل الاحترافي (للواجهة بس)
+# CSS للشكل الاحترافي
 # ========================================
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
     * { font-family: 'Cairo', sans-serif; }
+    
     .main-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 40px;
@@ -31,6 +32,7 @@ st.markdown("""
     }
     .main-header h1 { font-size: 48px; font-weight: 700; margin: 0; }
     .main-header p { font-size: 18px; opacity: 0.9; margin: 10px 0 0; }
+    
     .result-card {
         background: white;
         padding: 25px;
@@ -41,6 +43,7 @@ st.markdown("""
         font-size: 18px;
         line-height: 1.8;
     }
+    
     .metric-box {
         background: #f8f9fa;
         padding: 20px;
@@ -49,6 +52,7 @@ st.markdown("""
     }
     .metric-box .value { font-size: 28px; font-weight: 700; color: #2d3436; }
     .metric-box .label { font-size: 14px; color: #636e72; margin-top: 5px; }
+    
     .stButton > button {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
@@ -62,6 +66,38 @@ st.markdown("""
     .stButton > button:hover {
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    /* تنسيق صفحة التقرير */
+    .report-page {
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+        direction: rtl;
+        text-align: right;
+        font-family: 'Cairo', sans-serif;
+        margin: 20px 0;
+    }
+    .report-page h2 {
+        color: #2d3436;
+        border-bottom: 3px solid #667eea;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .report-page hr {
+        border: 1px solid #e9ecef;
+        margin: 15px 0;
+    }
+    .report-page .footer {
+        text-align: center;
+        color: #636e72;
+        font-size: 14px;
+        border-top: 1px solid #e9ecef;
+        padding-top: 15px;
+        margin-top: 20px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -297,14 +333,16 @@ if uploaded_file is not None:
         """, unsafe_allow_html=True)
 
     # ========================================
-    # التقرير (Markdown من غير HTML)
+    # عرض التقرير في صفحة منفصلة
     # ========================================
     st.markdown("---")
     st.subheader("📄 التقرير النهائي")
 
-    # بناء التقرير بتنسيق Markdown
+    # بناء التقرير (كـ Markdown)
     report_md = f"""
-### 📄 تقرير تلخيص المستند
+<div class="report-page">
+
+## 📄 تقرير تلخيص المستند
 
 **📅 التاريخ:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
@@ -318,7 +356,7 @@ if uploaded_file is not None:
 
 ---
 
-**📝 الملخص:**
+### 📝 الملخص
 
 """
     for s in summary.replace('؟', '.').split('. '):
@@ -328,18 +366,22 @@ if uploaded_file is not None:
     report_md += f"""
 ---
 
-**📄 النص الأصلي (مختصر):**
+### 📄 النص الأصلي (مختصر)
 
 {clean_text_content[:500]}{'...' if len(clean_text_content) > 500 else ''}
 
 ---
 
-✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي  
+<div class="footer">
+✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي<br>
 📌 v2.0 - AI Summarizer
+</div>
+
+</div>
 """
 
-    # عرض التقرير بـ Markdown (من غير HTML)
-    st.markdown(report_md)
+    # عرض التقرير (مع CSS بس من غير HTML في النص)
+    st.markdown(report_md, unsafe_allow_html=True)
 
     # ========================================
     # تحميل التقرير
