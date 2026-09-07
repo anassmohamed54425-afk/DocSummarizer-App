@@ -4,11 +4,7 @@ import io
 import re
 from docx import Document
 import datetime
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
-import arabic_reshaper
-from bidi.algorithm import get_display
+from weasyprint import HTML
 
 # ========================================
 # إعدادات الصفحة
@@ -237,74 +233,93 @@ def classify_text(text):
     return best_category, min(confidence, 0.95)
 
 # ========================================
-# دالة إنشاء PDF (باستخدام reportlab مع دعم العربية)
+# دالة إنشاء PDF (باستخدام weasyprint)
 # ========================================
 def create_pdf(text, summary, label, score, word_count, char_count, sentence_count):
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
+    html_content = f"""
+    <!DOCTYPE html>
+    <html dir="rtl">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {{
+                font-family: 'Arial', 'DejaVu Sans', sans-serif;
+                padding: 40px;
+                background-color: #f9f9f9;
+            }}
+            .container {{
+                background-color: white;
+                padding: 30px;
+                border-radius: 10px;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            }}
+            h1 {{
+                color: #2c3e50;
+                text-align: center;
+                border-bottom: 2px solid #3498db;
+                padding-bottom: 10px;
+            }}
+            .result {{
+                margin: 20px 0;
+                padding: 15px;
+                background-color: #ecf0f1;
+                border-radius: 5px;
+            }}
+            .score {{
+                font-size: 24px;
+                font-weight: bold;
+                color: #2c3e50;
+            }}
+            .sentiment {{
+                font-size: 20px;
+                color: #27ae60;
+            }}
+            .text {{
+                margin: 20px 0;
+                padding: 15px;
+                background-color: #f8f9fa;
+                border-right: 4px solid #3498db;
+            }}
+            .footer {{
+                margin-top: 30px;
+                text-align: center;
+                color: #7f8c8d;
+                font-size: 12px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>📊 تقرير تحليل المستند</h1>
+            
+            <div class="result">
+                <div class="score">نسبة المشاعر: {percent:.2f}%</div>
+                <div class="sentiment">التصنيف: {label}</div>
+            </div>
+            
+            <div class="text">
+                <strong>النص الأصلي (مختصر):</strong><br>
+                {text[:500].replace('\n', '<br>')}{'...' if len(text) > 500 else ''}
+            </div>
+            
+            <div class="text">
+                <strong>الملخص:</strong><br>
+                {summary.replace('\n', '<br>')}
+            </div>
+            
+            <div class="footer">
+                <strong>إحصائيات:</strong> عدد الكلمات: {word_count} | عدد الأحرف: {char_count} | عدد الجمل: {sentence_count}<br>
+                تم إنشاء التقرير في: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            </div>
+        </div>
+    </body>
+    </html>
+    """
     
-    def format_arabic(txt):
-        try:
-            reshaped = arabic_reshaper.reshape(txt)
-            return get_display(reshaped)
-        except:
-            return txt
-    
-    font_name = 'Helvetica'
-    
-    # العنوان
-    c.setFont(font_name, 20)
-    c.drawString(2*cm, height - 2*cm, format_arabic("تقرير تحليل المستند"))
-    c.line(2*cm, height - 2.5*cm, width - 2*cm, height - 2.5*cm)
-    
-    # التاريخ
-    c.setFont(font_name, 12)
-    c.drawString(2*cm, height - 3.5*cm, format_arabic(f"التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"))
-    
-    # النتيجة
-    c.setFont(font_name, 14)
-    c.drawString(2*cm, height - 5*cm, format_arabic(f"التصنيف: {label}"))
-    c.drawString(2*cm, height - 6*cm, format_arabic(f"نسبة الثقة: {score:.2%}"))
-    c.drawString(2*cm, height - 7*cm, format_arabic(f"عدد الكلمات: {word_count}"))
-    c.drawString(2*cm, height - 8*cm, format_arabic(f"عدد الأحرف: {char_count}"))
-    c.drawString(2*cm, height - 9*cm, format_arabic(f"عدد الجمل: {sentence_count}"))
-    
-    # الملخص
-    c.setFont(font_name, 12)
-    c.drawString(2*cm, height - 11*cm, format_arabic("الملخص:"))
-    
-    y = height - 12*cm
-    for line in summary.split('\n'):
-        if y < 2*cm:
-            c.showPage()
-            y = height - 2*cm
-        if len(line) > 80:
-            line = line[:80] + "..."
-        c.drawString(2*cm, y, format_arabic(line))
-        y -= 0.6*cm
-    
-    # النص الأصلي (مختصر)
-    c.setFont(font_name, 10)
-    c.drawString(2*cm, y - 1*cm, format_arabic("النص الأصلي (مختصر):"))
-    y -= 1.5*cm
-    
-    for line in text[:500].split('\n'):
-        if y < 2*cm:
-            c.showPage()
-            y = height - 2*cm
-        if len(line) > 80:
-            line = line[:80] + "..."
-        c.drawString(2*cm, y, format_arabic(line))
-        y -= 0.5*cm
-    
-    # التذييل
-    c.setFont(font_name, 10)
-    c.drawString(2*cm, 2*cm, format_arabic("تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي"))
-    
-    c.save()
-    buffer.seek(0)
-    return buffer
+    pdf_file = io.BytesIO()
+    HTML(string=html_content).write_pdf(pdf_file)
+    pdf_file.seek(0)
+    return pdf_file
 
 # ========================================
 # واجهة المستخدم
