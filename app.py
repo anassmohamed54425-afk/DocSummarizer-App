@@ -4,9 +4,11 @@ import io
 import re
 from docx import Document
 import datetime
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import cm
 import arabic_reshaper
 from bidi.algorithm import get_display
-from fpdf import FPDF
 
 # ========================================
 # إعدادات الصفحة
@@ -235,19 +237,13 @@ def classify_text(text):
     return best_category, min(confidence, 0.95)
 
 # ========================================
-# دالة إنشاء PDF (باستخدام fpdf2 مع دعم العربية)
+# دالة إنشاء PDF (باستخدام reportlab مع دعم العربية)
 # ========================================
 def create_pdf(text, summary, label, score, word_count, char_count, sentence_count):
-    class PDF(FPDF):
-        def header(self):
-            self.set_font('Arial', 'B', 16)
-            self.cell(0, 10, 'تقرير تحليل المستند', 0, 1, 'C')
-            self.ln(5)
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
     
-    pdf = PDF()
-    pdf.add_page()
-    
-    # دالة لتنسيق النص العربي
     def format_arabic(txt):
         try:
             reshaped = arabic_reshaper.reshape(txt)
@@ -255,56 +251,60 @@ def create_pdf(text, summary, label, score, word_count, char_count, sentence_cou
         except:
             return txt
     
-    # محاولة إضافة خط عربي
-    try:
-        # استخدام DejaVu (مدمج في fpdf2)
-        pdf.add_font('DejaVu', '', 'DejaVuSans.ttf', uni=True)
-        font_name = 'DejaVu'
-    except:
-        try:
-            # محاولة استخدام Arial Unicode
-            pdf.add_font('ArialUnicode', '', 'ArialUnicodeMS.ttf', uni=True)
-            font_name = 'ArialUnicode'
-        except:
-            try:
-                # محاولة استخدام NotoSans
-                pdf.add_font('NotoSans', '', 'NotoSans-Regular.ttf', uni=True)
-                font_name = 'NotoSans'
-            except:
-                # لو كل حاجة فشلت، استخدم Helvetica (مش هيدعم العربية)
-                font_name = 'Helvetica'
+    font_name = 'Helvetica'
     
-    pdf.set_font(font_name, size=12)
+    # العنوان
+    c.setFont(font_name, 20)
+    c.drawString(2*cm, height - 2*cm, format_arabic("تقرير تحليل المستند"))
+    c.line(2*cm, height - 2.5*cm, width - 2*cm, height - 2.5*cm)
     
     # التاريخ
-    pdf.cell(0, 10, format_arabic(f"التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"), 0, 1, 'C')
-    pdf.ln(5)
+    c.setFont(font_name, 12)
+    c.drawString(2*cm, height - 3.5*cm, format_arabic(f"التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"))
     
     # النتيجة
-    pdf.set_font(font_name, size=14)
-    pdf.cell(0, 10, format_arabic(f"التصنيف: {label}"), 0, 1, 'C')
-    pdf.cell(0, 10, format_arabic(f"نسبة الثقة: {score:.2%}"), 0, 1, 'C')
-    pdf.cell(0, 10, format_arabic(f"عدد الكلمات: {word_count}"), 0, 1, 'C')
-    pdf.cell(0, 10, format_arabic(f"عدد الأحرف: {char_count}"), 0, 1, 'C')
-    pdf.cell(0, 10, format_arabic(f"عدد الجمل: {sentence_count}"), 0, 1, 'C')
-    pdf.ln(5)
+    c.setFont(font_name, 14)
+    c.drawString(2*cm, height - 5*cm, format_arabic(f"التصنيف: {label}"))
+    c.drawString(2*cm, height - 6*cm, format_arabic(f"نسبة الثقة: {score:.2%}"))
+    c.drawString(2*cm, height - 7*cm, format_arabic(f"عدد الكلمات: {word_count}"))
+    c.drawString(2*cm, height - 8*cm, format_arabic(f"عدد الأحرف: {char_count}"))
+    c.drawString(2*cm, height - 9*cm, format_arabic(f"عدد الجمل: {sentence_count}"))
     
     # الملخص
-    pdf.set_font(font_name, size=12)
-    pdf.multi_cell(0, 10, format_arabic(f"الملخص:\n{summary}"))
-    pdf.ln(5)
+    c.setFont(font_name, 12)
+    c.drawString(2*cm, height - 11*cm, format_arabic("الملخص:"))
+    
+    y = height - 12*cm
+    for line in summary.split('\n'):
+        if y < 2*cm:
+            c.showPage()
+            y = height - 2*cm
+        if len(line) > 80:
+            line = line[:80] + "..."
+        c.drawString(2*cm, y, format_arabic(line))
+        y -= 0.6*cm
     
     # النص الأصلي (مختصر)
-    pdf.set_font(font_name, size=10)
-    pdf.multi_cell(0, 8, format_arabic(f"النص الأصلي (مختصر):\n{text[:500]}..."))
+    c.setFont(font_name, 10)
+    c.drawString(2*cm, y - 1*cm, format_arabic("النص الأصلي (مختصر):"))
+    y -= 1.5*cm
     
-    # حفظ PDF
-    try:
-        pdf_output = pdf.output(dest='S')
-        return io.BytesIO(pdf_output.encode('latin1'))
-    except Exception as e:
-        st.error(f"❌ مشكلة في حفظ PDF: {str(e)}")
-        return None
+    for line in text[:500].split('\n'):
+        if y < 2*cm:
+            c.showPage()
+            y = height - 2*cm
+        if len(line) > 80:
+            line = line[:80] + "..."
+        c.drawString(2*cm, y, format_arabic(line))
+        y -= 0.5*cm
+    
+    # التذييل
+    c.setFont(font_name, 10)
+    c.drawString(2*cm, 2*cm, format_arabic("تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي"))
+    
+    c.save()
+    buffer.seek(0)
+    return buffer
 
 # ========================================
 # واجهة المستخدم
