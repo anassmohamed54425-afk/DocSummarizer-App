@@ -9,191 +9,37 @@ from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import datetime
+import arabic_reshaper
+from bidi.algorithm import get_display
 
 # ========================================
-# إعدادات الصفحة (شكل احترافي)
+# إعدادات الصفحة
 # ========================================
 st.set_page_config(
-    page_title="ملخص المستندات الذكي | AI Summarizer",
+    page_title="ملخص المستندات الذكي",
     page_icon="📄",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# ========================================
-# CSS للشكل الاحترافي
-# ========================================
 st.markdown("""
 <style>
-    /* الخطوط والألوان */
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
-    
-    * {
-        font-family: 'Cairo', sans-serif;
-    }
-    
     .main-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 40px;
-        border-radius: 20px;
+        background: linear-gradient(135deg, #4A6CF7, #6C4AF7);
+        padding: 30px;
+        border-radius: 15px;
         text-align: center;
         color: white;
         margin-bottom: 30px;
-        box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
-    }
-    
-    .main-header h1 {
-        font-size: 48px;
-        font-weight: 700;
-        margin: 0;
-        text-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    }
-    
-    .main-header p {
-        font-size: 18px;
-        opacity: 0.9;
-        margin: 10px 0 0;
-    }
-    
-    .result-card {
-        background: white;
-        padding: 25px;
-        border-radius: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        margin: 20px 0;
-        border-right: 6px solid #667eea;
-        transition: transform 0.2s;
-    }
-    
-    .result-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-    }
-    
-    .metric-box {
-        background: #f8f9fa;
-        padding: 20px;
-        border-radius: 12px;
-        text-align: center;
-        transition: all 0.2s;
-    }
-    
-    .metric-box:hover {
-        background: #e9ecef;
-        transform: scale(1.02);
-    }
-    
-    .metric-box .value {
-        font-size: 28px;
-        font-weight: 700;
-        color: #2d3436;
-    }
-    
-    .metric-box .label {
-        font-size: 14px;
-        color: #636e72;
-        margin-top: 5px;
-    }
-    
-    .upload-section {
-        background: white;
-        padding: 30px;
-        border-radius: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        text-align: center;
-        border: 2px dashed #667eea;
-        margin-bottom: 20px;
-        transition: all 0.3s;
-    }
-    
-    .upload-section:hover {
-        border-color: #764ba2;
-        background: #f8f9ff;
-    }
-    
-    .stButton > button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 12px 30px;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 16px;
-        transition: all 0.3s;
-        width: 100%;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-    }
-    
-    .sidebar-content {
-        padding: 20px 10px;
-    }
-    
-    .sidebar-content h3 {
-        color: #2d3436;
-        border-bottom: 2px solid #667eea;
-        padding-bottom: 10px;
-    }
-    
-    .badge {
-        display: inline-block;
-        padding: 5px 15px;
-        border-radius: 20px;
-        font-size: 14px;
-        font-weight: 600;
-        color: white;
-    }
-    
-    .badge-tech {
-        background: #0984e3;
-    }
-    .badge-medical {
-        background: #00b894;
-    }
-    .badge-legal {
-        background: #6c5ce7;
-    }
-    .badge-finance {
-        background: #e17055;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ========================================
-# الشريط الجانبي (Sidebar)
-# ========================================
-with st.sidebar:
-    st.markdown("""
-    <div class="sidebar-content">
-        <h3>📊 تحليل المستندات</h3>
-        <p style="color: #636e72; font-size: 14px;">
-            تطبيق ذكي لتحليل وتلخيص المستندات النصية
-        </p>
-        <hr>
-        <h4>⚡ الميزات</h4>
-        <ul style="color: #2d3436; font-size: 14px; list-style: none; padding: 0;">
-            <li>📄 قراءة TXT, PDF, DOCX</li>
-            <li>📝 تلخيص ذكي</li>
-            <li>🏷️ تصنيف تلقائي</li>
-            <li>📊 إحصائيات متقدمة</li>
-            <li>📥 تصدير PDF و TXT</li>
-        </ul>
-        <hr>
-        <h4>📌 الإصدار</h4>
-        <p style="color: #636e72; font-size: 12px;">v2.0 - AI Summarizer</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# ========================================
-# رأس الصفحة
-# ========================================
 st.markdown("""
 <div class="main-header">
-    <h1>📄 ملخص المستندات الذكي</h1>
-    <p>رفع ملف، تلخيص، تصنيف، وتقرير PDF</p>
+    <h1 style="font-size: 40px; margin: 0;">📄 ملخص المستندات الذكي</h1>
+    <p style="font-size: 18px; opacity: 0.9; margin: 10px 0 0;">
+        رفع ملف، تلخيص، تصنيف، وتقرير PDF
+    </p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -290,7 +136,76 @@ def classify_text(text):
     return best_category, min(confidence, 0.95)
 
 # ========================================
-# رفع الملف
+# دالة إنشاء PDF (مع دعم العربية)
+# ========================================
+def create_pdf(text, summary, label, score, word_count, char_count, sentence_count):
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    
+    # دالة لتنسيق النص العربي
+    def format_arabic(txt):
+        reshaped = arabic_reshaper.reshape(txt)
+        return get_display(reshaped)
+    
+    # استخدام Helvetica مع تنسيق عربي
+    font_name = 'Helvetica'
+    
+    # العنوان
+    c.setFont(font_name, 20)
+    c.drawString(2*cm, height - 2*cm, format_arabic("تقرير تحليل المستند"))
+    c.line(2*cm, height - 2.5*cm, width - 2*cm, height - 2.5*cm)
+    
+    # التاريخ
+    c.setFont(font_name, 12)
+    c.drawString(2*cm, height - 3.5*cm, format_arabic(f"التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}"))
+    
+    # النتيجة
+    c.setFont(font_name, 14)
+    c.drawString(2*cm, height - 5*cm, format_arabic(f"التصنيف: {label}"))
+    c.drawString(2*cm, height - 6*cm, format_arabic(f"نسبة الثقة: {score:.2%}"))
+    c.drawString(2*cm, height - 7*cm, format_arabic(f"عدد الكلمات: {word_count}"))
+    c.drawString(2*cm, height - 8*cm, format_arabic(f"عدد الأحرف: {char_count}"))
+    c.drawString(2*cm, height - 9*cm, format_arabic(f"عدد الجمل: {sentence_count}"))
+    
+    # الملخص
+    c.setFont(font_name, 12)
+    c.drawString(2*cm, height - 11*cm, format_arabic("الملخص:"))
+    
+    y = height - 12*cm
+    for line in summary.split('\n'):
+        if y < 2*cm:
+            c.showPage()
+            y = height - 2*cm
+        if len(line) > 80:
+            line = line[:80] + "..."
+        c.drawString(2*cm, y, format_arabic(line))
+        y -= 0.6*cm
+    
+    # النص الأصلي (مختصر)
+    c.setFont(font_name, 10)
+    c.drawString(2*cm, y - 1*cm, format_arabic("النص الأصلي (مختصر):"))
+    y -= 1.5*cm
+    
+    for line in text[:500].split('\n'):
+        if y < 2*cm:
+            c.showPage()
+            y = height - 2*cm
+        if len(line) > 80:
+            line = line[:80] + "..."
+        c.drawString(2*cm, y, format_arabic(line))
+        y -= 0.5*cm
+    
+    # التذييل
+    c.setFont(font_name, 10)
+    c.drawString(2*cm, 2*cm, format_arabic("تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي"))
+    
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+# ========================================
+# واجهة المستخدم
 # ========================================
 uploaded_file = st.file_uploader("📂 اختر ملف", type=["txt", "pdf", "docx"])
 
@@ -309,7 +224,7 @@ if uploaded_file is not None:
     # ========================================
     # التلخيص
     # ========================================
-    st.markdown("---")
+    st.divider()
     st.subheader("📝 الملخص")
 
     if len(clean_text_content.split()) < 50:
@@ -324,16 +239,12 @@ if uploaded_file is not None:
                 st.error(f"❌ مش قادر ألخص النص: {str(e)}")
                 summary = clean_text_content
 
-    st.markdown(f"""
-    <div class="result-card">
-        {summary}
-    </div>
-    """, unsafe_allow_html=True)
+    st.write(summary)
 
     # ========================================
     # التصنيف
     # ========================================
-    st.markdown("---")
+    st.divider()
     st.subheader("🏷️ التصنيف")
 
     with st.spinner("⏳ جاري تصنيف النص..."):
@@ -345,27 +256,16 @@ if uploaded_file is not None:
             label = "غير معروف"
             score = 0
 
-    # عرض التصنيف في بطاقة
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown(f"""
-        <div class="metric-box">
-            <div class="value">{label}</div>
-            <div class="label">التصنيف</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("التصنيف", label)
     with col2:
-        st.markdown(f"""
-        <div class="metric-box">
-            <div class="value">{score:.2%}</div>
-            <div class="label">نسبة الثقة</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("نسبة الثقة", f"{score:.2%}")
 
     # ========================================
     # إحصائيات
     # ========================================
-    st.markdown("---")
+    st.divider()
     st.subheader("📊 إحصائيات")
 
     word_count = len(clean_text_content.split())
@@ -374,31 +274,16 @@ if uploaded_file is not None:
 
     col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown(f"""
-        <div class="metric-box">
-            <div class="value">{word_count}</div>
-            <div class="label">عدد الكلمات</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("عدد الكلمات", word_count)
     with col2:
-        st.markdown(f"""
-        <div class="metric-box">
-            <div class="value">{char_count}</div>
-            <div class="label">عدد الأحرف</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("عدد الأحرف", char_count)
     with col3:
-        st.markdown(f"""
-        <div class="metric-box">
-            <div class="value">{sentence_count}</div>
-            <div class="label">عدد الجمل</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.metric("عدد الجمل", sentence_count)
 
     # ========================================
     # تحميل التقرير (PDF + TXT)
     # ========================================
-    st.markdown("---")
+    st.divider()
     st.subheader("📥 تحميل التقرير")
 
     report_text = f"""
@@ -428,7 +313,6 @@ if uploaded_file is not None:
     ═══════════════════════════════════════════════════════════════
     """
 
-    # أزرار التحميل
     col1, col2 = st.columns(2)
     
     with col1:
@@ -441,65 +325,6 @@ if uploaded_file is not None:
     
     with col2:
         with st.spinner("⏳ جاري إنشاء PDF..."):
-            # دالة إنشاء PDF (مبسطة)
-            def create_pdf(text, summary, label, score, word_count, char_count, sentence_count):
-                buffer = io.BytesIO()
-                c = canvas.Canvas(buffer, pagesize=A4)
-                width, height = A4
-                
-                try:
-                    pdfmetrics.registerFont(TTFont('ArialUnicode', 'ArialUnicodeMS.ttf'))
-                    font_name = 'ArialUnicode'
-                except:
-                    font_name = 'Helvetica'
-                
-                c.setFont(font_name, 20)
-                c.drawString(2*cm, height - 2*cm, "تقرير تحليل المستند")
-                c.line(2*cm, height - 2.5*cm, width - 2*cm, height - 2.5*cm)
-                
-                c.setFont(font_name, 12)
-                c.drawString(2*cm, height - 3.5*cm, f"التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
-                
-                c.setFont(font_name, 14)
-                c.drawString(2*cm, height - 5*cm, f"التصنيف: {label}")
-                c.drawString(2*cm, height - 6*cm, f"نسبة الثقة: {score:.2%}")
-                c.drawString(2*cm, height - 7*cm, f"عدد الكلمات: {word_count}")
-                c.drawString(2*cm, height - 8*cm, f"عدد الأحرف: {char_count}")
-                c.drawString(2*cm, height - 9*cm, f"عدد الجمل: {sentence_count}")
-                
-                c.setFont(font_name, 12)
-                c.drawString(2*cm, height - 11*cm, "الملخص:")
-                
-                y = height - 12*cm
-                for line in summary.split('\n'):
-                    if y < 2*cm:
-                        c.showPage()
-                        y = height - 2*cm
-                    if len(line) > 80:
-                        line = line[:80] + "..."
-                    c.drawString(2*cm, y, line)
-                    y -= 0.6*cm
-                
-                c.setFont(font_name, 10)
-                c.drawString(2*cm, y - 1*cm, "النص الأصلي (مختصر):")
-                y -= 1.5*cm
-                
-                for line in text[:500].split('\n'):
-                    if y < 2*cm:
-                        c.showPage()
-                        y = height - 2*cm
-                    if len(line) > 80:
-                        line = line[:80] + "..."
-                    c.drawString(2*cm, y, line)
-                    y -= 0.5*cm
-                
-                c.setFont(font_name, 10)
-                c.drawString(2*cm, 2*cm, "تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي")
-                
-                c.save()
-                buffer.seek(0)
-                return buffer
-
             pdf_buffer = create_pdf(
                 clean_text_content, summary, label, score,
                 word_count, char_count, sentence_count
