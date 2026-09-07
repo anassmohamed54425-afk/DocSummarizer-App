@@ -104,16 +104,102 @@ st.markdown("""
         box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
     
-    .report-box {
-        background: #f8f9fa;
-        padding: 25px;
-        border-radius: 12px;
-        border-right: 4px solid #667eea;
+    /* ===== تحسين شكل التقرير ===== */
+    .report-container {
+        background: linear-gradient(145deg, #ffffff, #f8f9fa);
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+        margin: 20px 0;
         direction: rtl;
         text-align: right;
         font-family: 'Cairo', sans-serif;
-        line-height: 1.8;
+    }
+    
+    .report-header {
+        text-align: center;
+        padding-bottom: 15px;
+        border-bottom: 3px solid #667eea;
+        margin-bottom: 20px;
+    }
+    
+    .report-header h2 {
+        color: #2d3436;
+        font-size: 28px;
+        font-weight: 700;
+        margin: 0;
+    }
+    
+    .report-header p {
+        color: #636e72;
+        font-size: 14px;
+        margin: 5px 0 0;
+    }
+    
+    .report-section {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-radius: 12px;
+        margin: 15px 0;
+        border-right: 4px solid #667eea;
+    }
+    
+    .report-section-title {
+        font-weight: 700;
+        color: #2d3436;
         font-size: 16px;
+        margin-bottom: 5px;
+    }
+    
+    .report-section-content {
+        color: #495057;
+        font-size: 15px;
+        line-height: 1.8;
+    }
+    
+    .report-metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin: 15px 0;
+    }
+    
+    .report-metric-item {
+        background: white;
+        padding: 12px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    
+    .report-metric-item .metric-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: #2d3436;
+    }
+    
+    .report-metric-item .metric-label {
+        font-size: 12px;
+        color: #636e72;
+    }
+    
+    .report-footer {
+        text-align: center;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+        margin-top: 20px;
+        color: #636e72;
+        font-size: 12px;
+    }
+    
+    .report-badge {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 14px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -244,6 +330,79 @@ def classify_text(text):
     return best_category, min(confidence, 0.95)
 
 # ========================================
+# دالة إنشاء تقرير HTML جميل
+# ========================================
+def create_report_html(text, summary, label, score, word_count, char_count, sentence_count):
+    """إنشاء تقرير بتنسيق HTML جميل"""
+    
+    # تقسيم الملخص إلى نقاط
+    summary_points = summary.replace('؟', '.').split('. ')
+    summary_bullets = []
+    for s in summary_points:
+        if s.strip():
+            summary_bullets.append(f"<li>{s.strip()}.</li>")
+    
+    # تقطيع النص الأصلي
+    text_preview = text[:500]
+    if len(text) > 500:
+        text_preview += "..."
+    
+    html = f"""
+    <div class="report-container">
+        <div class="report-header">
+            <h2>📄 تقرير تلخيص المستند</h2>
+            <p>تم الإنشاء: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+        </div>
+        
+        <div class="report-metric-grid">
+            <div class="report-metric-item">
+                <div class="metric-value">🏷️ {label}</div>
+                <div class="metric-label">التصنيف</div>
+            </div>
+            <div class="report-metric-item">
+                <div class="metric-value">{score:.2%}</div>
+                <div class="metric-label">نسبة الثقة</div>
+            </div>
+            <div class="report-metric-item">
+                <div class="metric-value">{word_count}</div>
+                <div class="metric-label">عدد الكلمات</div>
+            </div>
+            <div class="report-metric-item">
+                <div class="metric-value">{char_count}</div>
+                <div class="metric-label">عدد الأحرف</div>
+            </div>
+            <div class="report-metric-item">
+                <div class="metric-value">{sentence_count}</div>
+                <div class="metric-label">عدد الجمل</div>
+            </div>
+        </div>
+        
+        <div class="report-section">
+            <div class="report-section-title">📝 الملخص</div>
+            <div class="report-section-content">
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    {''.join(summary_bullets)}
+                </ul>
+            </div>
+        </div>
+        
+        <div class="report-section">
+            <div class="report-section-title">📄 النص الأصلي (مختصر)</div>
+            <div class="report-section-content">
+                {text_preview.replace(chr(10), '<br>')}
+            </div>
+        </div>
+        
+        <div class="report-footer">
+            <span class="report-badge">AI Summarizer v2.0</span>
+            <span style="margin: 0 10px;">|</span>
+            تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي
+        </div>
+    </div>
+    """
+    return html
+
+# ========================================
 # واجهة المستخدم
 # ========================================
 uploaded_file = st.file_uploader("📂 اختر ملف", type=["txt", "pdf", "docx"])
@@ -349,65 +508,69 @@ if uploaded_file is not None:
         """, unsafe_allow_html=True)
 
     # ========================================
+    # عرض التقرير المنمنم
+    # ========================================
+    st.markdown("---")
+    st.subheader("📄 التقرير النهائي")
+
+    # إنشاء التقرير HTML
+    report_html = create_report_html(
+        clean_text_content, summary, label, score,
+        word_count, char_count, sentence_count
+    )
+    
+    # عرض التقرير
+    st.markdown(report_html, unsafe_allow_html=True)
+
+    # ========================================
     # تحميل التقرير (TXT)
     # ========================================
     st.markdown("---")
     st.subheader("📥 تحميل التقرير")
 
-    # إنشاء التقرير بشكل منظم وجميل
+    # إنشاء نسخة نصية للتحميل
     report_lines = []
+    report_lines.append("╔══════════════════════════════════════════════════════════════════════╗")
+    report_lines.append("║                     📄 تقرير تلخيص المستند                         ║")
+    report_lines.append("╚══════════════════════════════════════════════════════════════════════╝")
     report_lines.append("")
-    report_lines.append("")
-    report_lines.append("╔══════════════════════════════════════════════════════════════════════════╗")
-    report_lines.append("║                           📄 تقرير تلخيص المستند                      ║")
-    report_lines.append("╚══════════════════════════════════════════════════════════════════════════╝")
-    report_lines.append("")
-    report_lines.append("")
-    report_lines.append(f"  📅 التاريخ  :  {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    report_lines.append("")
-    report_lines.append("  ═══════════════════════════════════════════════════════════════════════")
-    report_lines.append("")
-    report_lines.append(f"  🏷️ التصنيف      :  {label}")
-    report_lines.append(f"  📊 نسبة الثقة   :  {score:.2%}")
-    report_lines.append(f"  📝 عدد الكلمات  :  {word_count}")
-    report_lines.append(f"  🔤 عدد الأحرف   :  {char_count}")
-    report_lines.append(f"  📖 عدد الجمل    :  {sentence_count}")
-    report_lines.append("")
-    report_lines.append("  ═══════════════════════════════════════════════════════════════════════")
+    report_lines.append(f"  📅 التاريخ          :  {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    report_lines.append("  ──────────────────────────────────────────────────────────────────")
+    report_lines.append(f"  🏷️ التصنيف          :  {label}")
+    report_lines.append(f"  📊 نسبة الثقة       :  {score:.2%}")
+    report_lines.append(f"  📝 عدد الكلمات      :  {word_count}")
+    report_lines.append(f"  🔤 عدد الأحرف       :  {char_count}")
+    report_lines.append(f"  📖 عدد الجمل        :  {sentence_count}")
+    report_lines.append("  ──────────────────────────────────────────────────────────────────")
     report_lines.append("")
     report_lines.append("  📝 الملخص:")
-    report_lines.append("  ─────────────────────────────────────────────────────────────────────")
-    for line in summary.split('. '):
-        if line.strip():
-            report_lines.append(f"  • {line.strip()}.")
+    report_lines.append("  ──────────────────────────────────────────────────────────────────")
+    for s in summary.replace('؟', '.').split('. '):
+        if s.strip():
+            report_lines.append(f"    • {s.strip()}.")
     report_lines.append("")
-    report_lines.append("  ═══════════════════════════════════════════════════════════════════════")
+    report_lines.append("  ──────────────────────────────────────────────────────────────────")
     report_lines.append("")
     report_lines.append("  📄 النص الأصلي (مختصر):")
-    report_lines.append("  ─────────────────────────────────────────────────────────────────────")
+    report_lines.append("  ──────────────────────────────────────────────────────────────────")
     text_preview = clean_text_content[:500]
     if len(clean_text_content) > 500:
         text_preview += "..."
-    for line in text_preview.split('\n'):
-        if line.strip():
-            report_lines.append(f"  {line.strip()}")
+    report_lines.append(f"    {text_preview.replace(chr(10), chr(10) + '    ')}")
     report_lines.append("")
-    report_lines.append("  ═══════════════════════════════════════════════════════════════════════")
+    report_lines.append("  ──────────────────────────────────────────────────────────────────")
     report_lines.append("")
     report_lines.append("  ✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي")
     report_lines.append("  📌 v2.0 - AI Summarizer")
     report_lines.append("")
-    report_lines.append("╔══════════════════════════════════════════════════════════════════════════╗")
-    report_lines.append("║                         نهاية التقرير                                  ║")
-    report_lines.append("╚══════════════════════════════════════════════════════════════════════════╝")
+    report_lines.append("╔══════════════════════════════════════════════════════════════════════╗")
+    report_lines.append("║                       نهاية التقرير                                ║")
+    report_lines.append("╚══════════════════════════════════════════════════════════════════════╝")
 
     report_text = "\n".join(report_lines)
 
-    # عرض التقرير بشكل منظم في الصفحة
-    st.markdown(f'<div class="report-box"><pre>{report_text}</pre></div>', unsafe_allow_html=True)
-
     st.download_button(
-        label="📥 تحميل التقرير",
+        label="📥 تحميل التقرير (TXT)",
         data=report_text,
         file_name=f"تقرير_{uploaded_file.name}.txt",
         mime="text/plain"
