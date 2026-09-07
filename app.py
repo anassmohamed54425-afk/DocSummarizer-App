@@ -9,13 +9,13 @@ import datetime
 # إعدادات الصفحة
 # ========================================
 st.set_page_config(
-    page_title="ملخص المستندات الذكي",
-    page_icon="📄",
+    page_title="تحليل المعامل الذكي",
+    page_icon="🧪",
     layout="wide"
 )
 
 # ========================================
-# CSS للشكل الاحترافي (متوافق مع Dark Mode)
+# CSS للشكل الاحترافي
 # ========================================
 st.markdown("""
 <style>
@@ -33,17 +33,28 @@ st.markdown("""
     .main-header h1 { font-size: 48px; font-weight: 700; margin: 0; }
     .main-header p { font-size: 18px; opacity: 0.9; margin: 10px 0 0; }
     
-    .result-card {
+    .test-card {
         background: var(--secondary-background-color);
-        padding: 25px;
-        border-radius: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        margin: 20px 0;
-        border-right: 6px solid #667eea;
-        font-size: 18px;
-        line-height: 1.8;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        margin: 12px 0;
+        border-right: 5px solid #667eea;
         color: var(--text-color);
     }
+    .test-card .test-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-color);
+    }
+    .test-card .test-result {
+        font-size: 16px;
+        color: var(--text-color);
+        opacity: 0.8;
+    }
+    .test-normal { border-right-color: #27ae60 !important; }
+    .test-high { border-right-color: #e74c3c !important; }
+    .test-low { border-right-color: #f39c12 !important; }
     
     .metric-box {
         background: var(--secondary-background-color);
@@ -69,53 +80,6 @@ st.markdown("""
         transform: translateY(-2px);
         box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
-    
-    /* تنسيق صفحة التقرير (متوافق مع Dark Mode) */
-    .report-page {
-        background: var(--secondary-background-color);
-        padding: 40px;
-        border-radius: 20px;
-        box-shadow: 0 8px 40px rgba(0,0,0,0.08);
-        border: 1px solid var(--border-color);
-        direction: rtl;
-        text-align: right;
-        font-family: 'Cairo', sans-serif;
-        margin: 20px 0;
-        color: var(--text-color);
-    }
-    .report-page h2 {
-        color: var(--text-color);
-        border-bottom: 3px solid #667eea;
-        padding-bottom: 15px;
-        margin-bottom: 20px;
-        text-align: center;
-    }
-    .report-page h3 {
-        color: var(--text-color);
-        margin-top: 20px;
-    }
-    .report-page hr {
-        border: 1px solid var(--border-color);
-        margin: 15px 0;
-    }
-    .report-page .footer {
-        text-align: center;
-        color: var(--text-color);
-        opacity: 0.7;
-        font-size: 14px;
-        border-top: 1px solid var(--border-color);
-        padding-top: 15px;
-        margin-top: 20px;
-    }
-    .report-page ul {
-        list-style: none;
-        padding: 0;
-    }
-    .report-page ul li::before {
-        content: "• ";
-        color: #667eea;
-        font-weight: bold;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -125,20 +89,20 @@ st.markdown("""
 with st.sidebar:
     st.markdown("""
     <div style="padding: 20px 10px;">
-        <h3 style="color: #667eea; border-bottom: 2px solid #667eea; padding-bottom: 10px;">📊 تحليل المستندات</h3>
-        <p style="color: var(--text-color); opacity: 0.7; font-size: 14px;">تطبيق ذكي لتحليل وتلخيص المستندات النصية</p>
+        <h3 style="color: #667eea; border-bottom: 2px solid #667eea; padding-bottom: 10px;">🧪 تحليل المعامل</h3>
+        <p style="color: var(--text-color); opacity: 0.7; font-size: 14px;">تطبيق ذكي لتحليل وتلخيص تقارير المعامل الطبية</p>
         <hr style="border-color: var(--border-color);">
         <h4 style="color: var(--text-color);">⚡ الميزات</h4>
         <ul style="color: var(--text-color); font-size: 14px; list-style: none; padding: 0;">
             <li>📄 قراءة TXT, PDF, DOCX</li>
-            <li>📝 تلخيص ذكي</li>
-            <li>🏷️ تصنيف تلقائي</li>
-            <li>📊 إحصائيات متقدمة</li>
+            <li>🧪 استخراج التحاليل الطبية</li>
+            <li>📊 مقارنة بالمعدلات الطبيعية</li>
+            <li>🎯 تقييم النتائج (طبيعي/مرتفع/منخفض)</li>
             <li>📥 تصدير تقرير منسق</li>
         </ul>
         <hr style="border-color: var(--border-color);">
         <h4 style="color: var(--text-color);">📌 الإصدار</h4>
-        <p style="color: var(--text-color); opacity: 0.7; font-size: 12px;">v2.0 - AI Summarizer</p>
+        <p style="color: var(--text-color); opacity: 0.7; font-size: 12px;">v1.0 - Lab Analyzer</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -147,8 +111,8 @@ with st.sidebar:
 # ========================================
 st.markdown("""
 <div class="main-header">
-    <h1>📄 ملخص المستندات الذكي</h1>
-    <p>رفع ملف، تلخيص، تصنيف، وتقرير منسق</p>
+    <h1>🧪 تحليل المعامل الذكي</h1>
+    <p>ارفع تقرير معمل، واستخرج التحاليل مع التقييم</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -179,75 +143,69 @@ def read_file(uploaded_file):
     else:
         return content.decode("utf-8")
 
-def summarize_text(text, num_sentences=5):
-    sentences = re.split(r'[.!؟]+', text)
-    sentences = [s.strip() for s in sentences if len(s.strip()) > 10]
-    
-    if len(sentences) <= num_sentences:
-        return text
-    
-    word_freq = {}
-    stopwords = ['و', 'في', 'من', 'الى', 'على', 'عن', 'مع', 'هذا', 'ذلك', 'كان', 'قد', 'كل', 'لم', 'له', 'ما', 'لا', 'غير', 'بين', 'إن', 'أن', 'ثم', 'حيث', 'حتى', 'عند', 'نحو', 'مثل', 'بعد', 'قبل', 'أثناء', 'دون', 'بسبب', 'رغم', 'معظم', 'بعض', 'أي', 'أو', 'فإن', 'إذا', 'لقد', 'هذه', 'التي', 'الذي']
-    
-    for sentence in sentences:
-        words = re.findall(r'\w+', sentence)
-        for word in words:
-            word = word.lower()
-            if word not in stopwords and len(word) > 2:
-                word_freq[word] = word_freq.get(word, 0) + 1
-    
-    if not word_freq:
-        return ' '.join(sentences[:num_sentences])
-    
-    sorted_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)
-    top_words = set([word for word, freq in sorted_words[:10]])
-    
-    sentence_scores = {}
-    for sentence in sentences:
-        words = re.findall(r'\w+', sentence)
-        score = sum(1 for word in words if word.lower() in top_words)
-        sentence_scores[sentence] = score
-    
-    sorted_sentences = sorted(sentence_scores.items(), key=lambda x: x[1], reverse=True)
-    summary = ' '.join([s for s, score in sorted_sentences[:num_sentences]])
-    
-    return summary if summary else ' '.join(sentences[:num_sentences])
+# قاعدة بيانات التحاليل الطبية (اسم التحليل، الوحدة، النطاق الطبيعي)
+medical_tests = {
+    "سكر صائم": {"unit": "mg/dL", "normal": (70, 100)},
+    "سكر فاطر": {"unit": "mg/dL", "normal": (70, 140)},
+    "هيموجلوبين": {"unit": "g/dL", "normal": (12, 16)},
+    "صفائح دموية": {"unit": "10^3/µL", "normal": (150, 400)},
+    "كريات بيضاء": {"unit": "10^3/µL", "normal": (4, 11)},
+    "كريات حمراء": {"unit": "10^6/µL", "normal": (4.5, 5.5)},
+    "صوديوم": {"unit": "mEq/L", "normal": (135, 145)},
+    "بوتاسيوم": {"unit": "mEq/L", "normal": (3.5, 5.0)},
+    "كالسيوم": {"unit": "mg/dL", "normal": (8.5, 10.5)},
+    "يوريا": {"unit": "mg/dL", "normal": (7, 20)},
+    "كرياتينين": {"unit": "mg/dL", "normal": (0.6, 1.2)},
+    "كولسترول": {"unit": "mg/dL", "normal": (125, 200)},
+    "دهون ثلاثية": {"unit": "mg/dL", "normal": (50, 150)},
+    "فيتامين د": {"unit": "ng/mL", "normal": (30, 100)},
+    "حديد": {"unit": "µg/dL", "normal": (60, 170)},
+    "فيريتين": {"unit": "ng/mL", "normal": (20, 500)},
+}
 
-def classify_text(text):
-    categories = {
-        "مالي": ["مال", "اقتصاد", "بنك", "استثمار", "سوق", "أسهم", "دولار", "ربح", "خسارة", "ضريبة"],
-        "طبي": ["طبي", "صحي", "مرض", "علاج", "دواء", "جراحة", "تشخيص", "مستشفى", "طبيب", "صحة"],
-        "تقني": ["تقني", "برمجة", "حاسوب", "ذكاء اصطناعي", "بيانات", "خوارزمية", "تطبيق", "موقع", "برنامج", "تكنولوجيا"],
-        "قانوني": ["قانون", "محكمة", "عقد", "دعوى", "محامي", "حكم", "تشريع", "حقوق", "إجراء", "قضائي"],
-        "تعليمي": ["تعليم", "مدرسة", "جامعة", "طالب", "معلم", "منهج", "دراسة", "بحث", "علمي", "أكاديمي"],
-        "تسويقي": ["تسويق", "إعلان", "علامة تجارية", "عملاء", "مبيعات", "عرض", "ترويج", "منتج", "خدمة", "سوق"],
-        "سياسي": ["سياسي", "حكومة", "برلمان", "انتخاب", "وزير", "رئيس", "قرار", "أمة", "دستور", "حزب"],
-        "اجتماعي": ["اجتماعي", "مجتمع", "أسرة", "ثقافة", "سكان", "تنمية", "فقر", "بطالة", "تعاون", "تكافل"],
-        "رياضي": ["رياضي", "كرة", "ملعب", "لاعب", "مدرب", "بطولة", "مباراة", "نادي", "جمباز", "سباق"],
-        "ديني": ["ديني", "إسلامي", "مسجد", "صلاة", "قرآن", "حديث", "فتوى", "إيمان", "عقيدة", "عبادة"],
-        "فني": ["فني", "فن", "موسيقى", "رسم", "مسرح", "سينما", "تمثيل", "غناء", "تشكيل", "أدب"]
-    }
-    
+def extract_lab_tests(text):
+    """استخراج التحاليل الطبية من النص"""
+    found_tests = []
     text_lower = text.lower()
-    category_scores = {}
-    for category, keywords in categories.items():
-        score = sum(1 for keyword in keywords if keyword in text_lower)
-        category_scores[category] = score
     
-    if max(category_scores.values()) == 0:
-        return "عام", 0.5
+    for test_name, test_info in medical_tests.items():
+        # البحث عن اسم التحليل في النص
+        if test_name.lower() in text_lower:
+            # محاولة استخراج الرقم بعد اسم التحليل
+            pattern = rf"{test_name}[:\s]*([0-9]+\.?[0-9]*)"
+            match = re.search(pattern, text, re.IGNORECASE)
+            
+            if match:
+                value = float(match.group(1))
+                normal_min, normal_max = test_info["normal"]
+                unit = test_info["unit"]
+                
+                # تقييم النتيجة
+                if value < normal_min:
+                    status = "منخفض ⬇️"
+                    status_class = "test-low"
+                elif value > normal_max:
+                    status = "مرتفع ⬆️"
+                    status_class = "test-high"
+                else:
+                    status = "طبيعي ✅"
+                    status_class = "test-normal"
+                
+                found_tests.append({
+                    "name": test_name,
+                    "value": value,
+                    "unit": unit,
+                    "normal_range": f"{normal_min} - {normal_max}",
+                    "status": status,
+                    "status_class": status_class
+                })
     
-    best_category = max(category_scores, key=category_scores.get)
-    best_score = category_scores[best_category]
-    max_possible = len(categories[best_category])
-    confidence = best_score / max_possible if max_possible > 0 else 0
-    
-    return best_category, min(confidence, 0.95)
+    return found_tests
 
 # ========================================
 # واجهة المستخدم
 # ========================================
-uploaded_file = st.file_uploader("📂 اختر ملف", type=["txt", "pdf", "docx"])
+uploaded_file = st.file_uploader("📂 اختر ملف تقرير معمل", type=["txt", "pdf", "docx"])
 
 if uploaded_file is not None:
     try:
@@ -262,143 +220,71 @@ if uploaded_file is not None:
         st.text(clean_text_content[:1000] + ("..." if len(clean_text_content) > 1000 else ""))
 
     # ========================================
-    # التلخيص
+    # استخراج التحاليل
     # ========================================
     st.markdown("---")
-    st.subheader("📝 الملخص")
+    st.subheader("🧪 التحاليل المستخرجة")
 
-    if len(clean_text_content.split()) < 50:
-        st.warning("⚠️ النص قصير جداً (أقل من 50 كلمة)")
-        summary = clean_text_content
+    tests = extract_lab_tests(clean_text_content)
+
+    if not tests:
+        st.warning("⚠️ لم يتم العثور على تحاليل طبية في هذا الملف. تأكد من أن الملف يحتوي على أسماء تحاليل معروفة.")
     else:
-        with st.spinner("⏳ جاري تلخيص النص..."):
-            try:
-                summary = summarize_text(clean_text_content, num_sentences=5)
-                st.success("✅ تم التلخيص بنجاح!")
-            except Exception as e:
-                st.error(f"❌ مش قادر ألخص النص: {str(e)}")
-                summary = clean_text_content
+        # عرض كل تحليل في بطاقة
+        for test in tests:
+            st.markdown(f"""
+            <div class="test-card {test['status_class']}">
+                <div class="test-name">🧪 {test['name']}</div>
+                <div class="test-result">
+                    <strong>النتيجة:</strong> {test['value']} {test['unit']}
+                    <span style="margin: 0 10px;">|</span>
+                    <strong>المعدل الطبيعي:</strong> {test['normal_range']} {test['unit']}
+                    <span style="margin: 0 10px;">|</span>
+                    <strong>التقييم:</strong> {test['status']}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-    st.markdown(f"""
-    <div class="result-card">
-        {summary}
-    </div>
-    """, unsafe_allow_html=True)
+        # ========================================
+        # إحصائيات
+        # ========================================
+        st.markdown("---")
+        st.subheader("📊 ملخص التحاليل")
 
-    # ========================================
-    # التصنيف
-    # ========================================
-    st.markdown("---")
-    st.subheader("🏷️ التصنيف")
+        total = len(tests)
+        normal = sum(1 for t in tests if "طبيعي" in t['status'])
+        high = sum(1 for t in tests if "مرتفع" in t['status'])
+        low = sum(1 for t in tests if "منخفض" in t['status'])
 
-    with st.spinner("⏳ جاري تصنيف النص..."):
-        try:
-            label, score = classify_text(clean_text_content)
-            st.success("✅ تم التصنيف بنجاح!")
-        except Exception as e:
-            st.error(f"❌ مش قادر أصنف النص: {str(e)}")
-            label = "غير معروف"
-            score = 0
-
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown(f"""
-        <div class="metric-box">
-            <div class="value">{label}</div>
-            <div class="label">التصنيف</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"""
-        <div class="metric-box">
-            <div class="value">{score:.2%}</div>
-            <div class="label">نسبة الثقة</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # ========================================
-    # إحصائيات
-    # ========================================
-    st.markdown("---")
-    st.subheader("📊 إحصائيات")
-
-    word_count = len(clean_text_content.split())
-    char_count = len(clean_text_content)
-    sentence_count = len(re.findall(r'[.!؟]+', clean_text_content))
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.markdown(f"""
-        <div class="metric-box">
-            <div class="value">{word_count}</div>
-            <div class="label">عدد الكلمات</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"""
-        <div class="metric-box">
-            <div class="value">{char_count}</div>
-            <div class="label">عدد الأحرف</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with col3:
-        st.markdown(f"""
-        <div class="metric-box">
-            <div class="value">{sentence_count}</div>
-            <div class="label">عدد الجمل</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # ========================================
-    # عرض التقرير (متوافق مع Dark Mode)
-    # ========================================
-    st.markdown("---")
-    st.subheader("📄 التقرير النهائي")
-
-    # بناء التقرير (كـ Markdown مع CSS متوافق)
-    report_md = f"""
-<div class="report-page">
-
-## 📄 تقرير تلخيص المستند
-
-**📅 التاريخ:** {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-
----
-
-**🏷️ التصنيف:** {label}  
-**📊 نسبة الثقة:** {score:.2%}  
-**📝 عدد الكلمات:** {word_count}  
-**🔤 عدد الأحرف:** {char_count}  
-**📖 عدد الجمل:** {sentence_count}
-
----
-
-### 📝 الملخص
-
-"""
-    for s in summary.replace('؟', '.').split('. '):
-        if s.strip():
-            report_md += f"- {s.strip()}.\n"
-
-    report_md += f"""
----
-
-### 📄 النص الأصلي (مختصر)
-
-{clean_text_content[:500]}{'...' if len(clean_text_content) > 500 else ''}
-
----
-
-<div class="footer">
-✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي<br>
-📌 v2.0 - AI Summarizer
-</div>
-
-</div>
-"""
-
-    # عرض التقرير
-    st.markdown(report_md, unsafe_allow_html=True)
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.markdown(f"""
+            <div class="metric-box">
+                <div class="value">{total}</div>
+                <div class="label">إجمالي التحاليل</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col2:
+            st.markdown(f"""
+            <div class="metric-box">
+                <div class="value" style="color: #27ae60;">{normal}</div>
+                <div class="label">طبيعي ✅</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col3:
+            st.markdown(f"""
+            <div class="metric-box">
+                <div class="value" style="color: #e74c3c;">{high}</div>
+                <div class="label">مرتفع ⬆️</div>
+            </div>
+            """, unsafe_allow_html=True)
+        with col4:
+            st.markdown(f"""
+            <div class="metric-box">
+                <div class="value" style="color: #f39c12;">{low}</div>
+                <div class="label">منخفض ⬇️</div>
+            </div>
+            """, unsafe_allow_html=True)
 
     # ========================================
     # تحميل التقرير
@@ -406,54 +292,49 @@ if uploaded_file is not None:
     st.markdown("---")
     st.subheader("📥 تحميل التقرير")
 
-    # نسخة نصية للتحميل
-    report_text = f"""
-    ═══════════════════════════════════════════════════════════════════
-                          📄 تقرير تلخيص المستند
-    ═══════════════════════════════════════════════════════════════════
+    # بناء التقرير النصي
+    report_lines = []
+    report_lines.append("=" * 65)
+    report_lines.append("              🧪 تقرير تحليل المعامل")
+    report_lines.append("=" * 65)
+    report_lines.append("")
+    report_lines.append(f"  📅 التاريخ          :  {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    report_lines.append("  " + "-" * 60)
+    report_lines.append("")
 
-    📅 التاريخ          :  {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-    ──────────────────────────────────────────────────────────────────
-    🏷️ التصنيف          :  {label}
-    📊 نسبة الثقة       :  {score:.2%}
-    📝 عدد الكلمات      :  {word_count}
-    🔤 عدد الأحرف       :  {char_count}
-    📖 عدد الجمل        :  {sentence_count}
-    ──────────────────────────────────────────────────────────────────
+    if tests:
+        for test in tests:
+            report_lines.append(f"  🧪 {test['name']}")
+            report_lines.append(f"     النتيجة: {test['value']} {test['unit']}")
+            report_lines.append(f"     المعدل الطبيعي: {test['normal_range']} {test['unit']}")
+            report_lines.append(f"     التقييم: {test['status']}")
+            report_lines.append("")
+    else:
+        report_lines.append("  ⚠️ لم يتم العثور على تحاليل طبية في هذا الملف.")
+        report_lines.append("")
 
-    📝 الملخص:
-    ──────────────────────────────────────────────────────────────────
-"""
-    for s in summary.replace('؟', '.').split('. '):
-        if s.strip():
-            report_text += f"    • {s.strip()}.\n"
+    report_lines.append("  " + "-" * 60)
+    report_lines.append("")
+    report_lines.append("  ✅ تم إنشاء التقرير بواسطة تطبيق تحليل المعامل الذكي")
+    report_lines.append("  📌 v1.0 - Lab Analyzer")
+    report_lines.append("")
+    report_lines.append("=" * 65)
 
-    report_text += f"""
-    ──────────────────────────────────────────────────────────────────
-
-    📄 النص الأصلي (مختصر):
-    ──────────────────────────────────────────────────────────────────
-    {clean_text_content[:500]}{'...' if len(clean_text_content) > 500 else ''}
-    ──────────────────────────────────────────────────────────────────
-
-    ✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي
-    📌 v2.0 - AI Summarizer
-    ═══════════════════════════════════════════════════════════════════
-    """
+    report_text = "\n".join(report_lines)
 
     st.download_button(
-        label="📥 تحميل التقرير (TXT)",
+        label="📥 تحميل تقرير التحاليل (TXT)",
         data=report_text,
-        file_name=f"تقرير_{uploaded_file.name}.txt",
+        file_name=f"تقرير_تحاليل_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
         mime="text/plain"
     )
 
 else:
-    st.info("⏳ انتظر رفع ملف لتحليله")
+    st.info("⏳ انتظر رفع ملف تقرير معمل لتحليله")
     st.markdown("""
     ### 🚀 طريقة الاستخدام:
-    1. اضغط على زر **"اختر ملف"**
+    1. اضغط على زر **"اختر ملف تقرير معمل"**
     2. اختر ملف `.txt` أو `.pdf` أو `.docx`
-    3. انتظر لحظات وستظهر النتيجة
+    3. انتظر لحظات وستظهر التحاليل المستخرجة
     4. يمكنك تحميل التقرير
     """)
