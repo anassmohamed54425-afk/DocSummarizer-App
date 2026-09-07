@@ -71,17 +71,44 @@ def read_file(uploaded_file):
 # ========================================
 # دالة التلخيص (من غير NLTK)
 # ========================================
-def summarize_text(text, num_sentences=4):
-    # تقسيم النص على النقاط والفواصل وعلامات الاستفهام
+def summarize_text(text, num_sentences=5):
+    # تقسيم النص إلى جمل
     sentences = re.split(r'[.!؟]+', text)
     sentences = [s.strip() for s in sentences if len(s.strip()) > 10]
     
     if len(sentences) <= num_sentences:
         return text
     
-    # اختيار أول num_sentences جمل
-    summary = '. '.join(sentences[:num_sentences]) + '.'
-    return summary
+    # حساب تكرار الكلمات (مع تجاهل الكلمات الشائعة)
+    word_freq = {}
+    stopwords = ['و', 'في', 'من', 'الى', 'على', 'عن', 'مع', 'هذا', 'ذلك', 'كان', 'قد', 'كل', 'لم', 'له', 'ما', 'لا', 'غير', 'بين', 'إن', 'أن', 'ثم', 'حيث', 'حتى', 'عند', 'نحو', 'مثل', 'بعد', 'قبل', 'أثناء', 'دون', 'بسبب', 'رغم', 'معظم', 'بعض', 'أي', 'أو', 'فإن', 'إذا', 'لقد', 'هذه', 'التي', 'الذي']
+    
+    for sentence in sentences:
+        words = re.findall(r'\w+', sentence)
+        for word in words:
+            word = word.lower()
+            if word not in stopwords and len(word) > 2:
+                word_freq[word] = word_freq.get(word, 0) + 1
+    
+    if not word_freq:
+        return ' '.join(sentences[:num_sentences])
+    
+    # ترتيب الكلمات حسب الأهمية
+    sorted_words = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)
+    top_words = set([word for word, freq in sorted_words[:10]])
+    
+    # حساب درجة كل جملة
+    sentence_scores = {}
+    for sentence in sentences:
+        words = re.findall(r'\w+', sentence)
+        score = sum(1 for word in words if word.lower() in top_words)
+        sentence_scores[sentence] = score
+    
+    # اختيار أفضل الجمل
+    sorted_sentences = sorted(sentence_scores.items(), key=lambda x: x[1], reverse=True)
+    summary = ' '.join([s for s, score in sorted_sentences[:num_sentences]])
+    
+    return summary if summary else ' '.join(sentences[:num_sentences])
 
 # ========================================
 # دالة التصنيف (بالكلمات المفتاحية)
