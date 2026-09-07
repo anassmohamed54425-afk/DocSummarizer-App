@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 # ========================================
-# CSS للشكل الاحترافي
+# CSS للشكل الاحترافي (للواجهة + التقرير)
 # ========================================
 st.markdown("""
 <style>
@@ -55,6 +55,8 @@ st.markdown("""
         margin: 20px 0;
         border-right: 6px solid #667eea;
         transition: transform 0.2s;
+        font-size: 18px;
+        line-height: 1.8;
     }
     
     .result-card:hover {
@@ -68,11 +70,13 @@ st.markdown("""
         border-radius: 12px;
         text-align: center;
         transition: all 0.2s;
+        border: 1px solid #e9ecef;
     }
     
     .metric-box:hover {
         background: #e9ecef;
         transform: scale(1.02);
+        border-color: #667eea;
     }
     
     .metric-box .value {
@@ -104,19 +108,89 @@ st.markdown("""
         box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
     
-    /* تنسيق التقرير النصي */
-    .report-container {
-        background: #f8f9fa;
-        padding: 25px;
-        border-radius: 15px;
-        border-right: 5px solid #667eea;
-        font-family: 'Courier New', monospace;
+    /* ===== تنسيق التقرير الاحترافي ===== */
+    .report-card {
+        background: linear-gradient(145deg, #ffffff, #f8f9fa);
+        padding: 35px;
+        border-radius: 20px;
+        border-right: 8px solid #667eea;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.06);
+        margin: 20px 0;
+        font-size: 18px;
+        line-height: 2;
+        color: #2d3436;
         direction: rtl;
         text-align: right;
+        font-family: 'Cairo', sans-serif;
+        border: 1px solid #e9ecef;
+    }
+    
+    .report-card .report-title {
+        font-size: 26px;
+        font-weight: 700;
+        color: #2d3436;
+        text-align: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 3px solid #667eea;
+    }
+    
+    .report-card .report-line {
+        padding: 6px 0;
+        border-bottom: 1px dashed #e9ecef;
+    }
+    
+    .report-card .report-label {
+        font-weight: 600;
+        color: #2d3436;
+    }
+    
+    .report-card .report-value {
+        color: #495057;
+    }
+    
+    .report-card .report-section-title {
+        font-weight: 700;
+        font-size: 20px;
+        color: #2d3436;
+        margin: 15px 0 10px;
+        padding: 10px 15px;
+        background: #f1f3f5;
+        border-radius: 10px;
+        border-right: 4px solid #667eea;
+    }
+    
+    .report-card .report-bullet {
+        padding: 4px 0;
+        padding-right: 20px;
+        position: relative;
+    }
+    
+    .report-card .report-bullet::before {
+        content: "•";
+        color: #667eea;
+        font-weight: 700;
+        position: absolute;
+        right: 0;
+    }
+    
+    .report-card .report-footer {
+        text-align: center;
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #e9ecef;
+        color: #636e72;
         font-size: 14px;
-        line-height: 1.8;
-        white-space: pre-wrap;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    
+    .report-badge {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 4px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -352,12 +426,83 @@ if uploaded_file is not None:
         """, unsafe_allow_html=True)
 
     # ========================================
-    # عرض التقرير (نصي منظم)
+    # عرض التقرير الاحترافي
     # ========================================
     st.markdown("---")
     st.subheader("📄 التقرير النهائي")
 
-    # إنشاء التقرير النصي
+    # تجهيز نقاط الملخص
+    summary_bullets = []
+    for s in summary.replace('؟', '.').split('. '):
+        if s.strip():
+            summary_bullets.append(f'<div class="report-bullet">{s.strip()}.</div>')
+
+    # تجهيز النص الأصلي
+    text_preview = clean_text_content[:500]
+    if len(clean_text_content) > 500:
+        text_preview += "..."
+
+    # بناء التقرير
+    report_html = f"""
+    <div class="report-card">
+        <div class="report-title">📄 تقرير تلخيص المستند</div>
+        
+        <div class="report-line">
+            <span class="report-label">📅 التاريخ:</span>
+            <span class="report-value">{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</span>
+        </div>
+        
+        <div class="report-line">
+            <span class="report-label">🏷️ التصنيف:</span>
+            <span class="report-value">{label}</span>
+        </div>
+        
+        <div class="report-line">
+            <span class="report-label">📊 نسبة الثقة:</span>
+            <span class="report-value">{score:.2%}</span>
+        </div>
+        
+        <div class="report-line">
+            <span class="report-label">📝 عدد الكلمات:</span>
+            <span class="report-value">{word_count}</span>
+        </div>
+        
+        <div class="report-line">
+            <span class="report-label">🔤 عدد الأحرف:</span>
+            <span class="report-value">{char_count}</span>
+        </div>
+        
+        <div class="report-line">
+            <span class="report-label">📖 عدد الجمل:</span>
+            <span class="report-value">{sentence_count}</span>
+        </div>
+        
+        <div class="report-section-title">📝 الملخص</div>
+        {''.join(summary_bullets)}
+        
+        <div class="report-section-title">📄 النص الأصلي (مختصر)</div>
+        <div style="padding: 10px 0; color: #495057; line-height: 1.8;">
+            {text_preview}
+        </div>
+        
+        <div class="report-footer">
+            <span class="report-badge">AI Summarizer v2.0</span>
+            <span style="margin: 0 10px;">|</span>
+            تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي
+        </div>
+    </div>
+    """
+
+    # عرض التقرير
+    st.markdown(report_html, unsafe_allow_html=True)
+
+    # ========================================
+    # تحميل التقرير (TXT)
+    # ========================================
+    st.markdown("---")
+    st.subheader("📥 تحميل التقرير")
+
+    # إنشاء نسخة نصية للتحميل
     report_lines = []
     report_lines.append("=" * 60)
     report_lines.append("           📄 تقرير تلخيص المستند")
@@ -395,15 +540,6 @@ if uploaded_file is not None:
     report_lines.append("=" * 60)
 
     report_text = "\n".join(report_lines)
-
-    # عرض التقرير في صندوق منسق
-    st.markdown(f'<div class="report-container">{report_text}</div>', unsafe_allow_html=True)
-
-    # ========================================
-    # تحميل التقرير (TXT)
-    # ========================================
-    st.markdown("---")
-    st.subheader("📥 تحميل التقرير")
 
     st.download_button(
         label="📥 تحميل التقرير (TXT)",
