@@ -539,6 +539,7 @@ with tab1:
         report_html = display_report(
             summary, label, score, word_count, char_count, sentence_count, clean_text_content
         )
+        # ✅ استخدام st.markdown مع unsafe_allow_html=True عشان يظهر بشكل صحيح
         st.markdown(report_html, unsafe_allow_html=True)
 
         # ========================================
