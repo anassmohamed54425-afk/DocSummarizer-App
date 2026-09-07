@@ -44,6 +44,8 @@ st.markdown("""
         font-size: 18px;
         line-height: 1.8;
         color: var(--text-color);
+        direction: rtl;
+        text-align: right;
     }
     
     .metric-box {
@@ -79,6 +81,8 @@ st.markdown("""
         margin: 12px 0;
         border-right: 5px solid #667eea;
         color: var(--text-color);
+        direction: rtl;
+        text-align: right;
     }
     .test-card .test-name { font-size: 18px; font-weight: 700; }
     .test-card .test-result { font-size: 16px; opacity: 0.8; }
@@ -94,6 +98,8 @@ st.markdown("""
         margin: 12px 0;
         border-right: 5px solid #667eea;
         color: var(--text-color);
+        direction: rtl;
+        text-align: right;
     }
     .email-card .email-subject { font-size: 18px; font-weight: 700; }
     .email-card .email-summary { font-size: 15px; opacity: 0.9; margin: 5px 0; }
@@ -111,7 +117,7 @@ st.markdown("""
 # ========================================
 with st.sidebar:
     st.markdown("""
-    <div style="padding: 20px 10px;">
+    <div style="padding: 20px 10px; direction: rtl; text-align: right;">
         <h3 style="color: #667eea; border-bottom: 2px solid #667eea; padding-bottom: 10px;">📊 تحليل المستندات</h3>
         <p style="color: var(--text-color); opacity: 0.7; font-size: 14px;">تطبيق ذكي لتحليل وتلخيص المستندات النصية</p>
         <hr style="border-color: var(--border-color);">
@@ -166,7 +172,10 @@ def read_file(uploaded_file):
         text = "\n".join([para.text for para in doc.paragraphs])
         return text
     else:
-        return content.decode("utf-8")
+        try:
+            return content.decode("utf-8")
+        except:
+            return content.decode("utf-8", errors="ignore")
 
 def summarize_text(text, num_sentences=5):
     sentences = re.split(r'[.!؟]+', text)
@@ -348,11 +357,11 @@ def summarize_email(text, num_sentences=3):
     return summarize_text(text, num_sentences)
 
 # ========================================
-# عرض التقرير باستخدام HTML Components
+# عرض التقرير باستخدام HTML Components (مع RTL)
 # ========================================
 def display_report(summary, label, score, word_count, char_count, sentence_count, clean_text_content):
     report_html = f"""
-    <div style="
+    <div dir="rtl" style="
         background: #f8f9fa;
         padding: 30px;
         border-radius: 15px;
@@ -625,7 +634,7 @@ with tab1:
 # ========================================
 with tab2:
     st.markdown("""
-    <div style="background: var(--secondary-background-color); padding: 15px; border-radius: 10px; border-right: 4px solid #667eea; margin-bottom: 20px;">
+    <div dir="rtl" style="background: var(--secondary-background-color); padding: 15px; border-radius: 10px; border-right: 4px solid #667eea; margin-bottom: 20px;">
         <h4 style="margin: 0; color: var(--text-color);">🧪 تحليل المعامل الطبية</h4>
         <p style="margin: 5px 0 0; color: var(--text-color); opacity: 0.7; font-size: 14px;">ارفع تقرير معمل، وسيتم استخراج التحاليل وتقييمها</p>
     </div>
@@ -658,7 +667,7 @@ with tab2:
         else:
             for test in tests:
                 st.markdown(f"""
-                <div class="test-card {test['status_class']}">
+                <div dir="rtl" class="test-card {test['status_class']}">
                     <div class="test-name">🧪 {test['name']}</div>
                     <div class="test-result">
                         <strong>النتيجة:</strong> {test['value']} {test['unit']}
@@ -761,7 +770,7 @@ with tab2:
 # ========================================
 with tab3:
     st.markdown("""
-    <div style="background: var(--secondary-background-color); padding: 15px; border-radius: 10px; border-right: 4px solid #667eea; margin-bottom: 20px;">
+    <div dir="rtl" style="background: var(--secondary-background-color); padding: 15px; border-radius: 10px; border-right: 4px solid #667eea; margin-bottom: 20px;">
         <h4 style="margin: 0; color: var(--text-color);">📧 تلخيص الإيميلات</h4>
         <p style="margin: 5px 0 0; color: var(--text-color); opacity: 0.7; font-size: 14px;">ارفع ملف إيميلات، وسيتم استخراج وتلخيص وتصنيف كل إيميل</p>
     </div>
@@ -806,7 +815,7 @@ with tab3:
                 })
                 
                 st.markdown(f"""
-                <div class="email-card {class_name}">
+                <div dir="rtl" class="email-card {class_name}">
                     <div class="email-subject">📧 {email['subject']}</div>
                     <div class="email-summary"><strong>📝 الملخص:</strong> {summary}</div>
                     <div class="email-classification"><strong>🏷️ التصنيف:</strong> {classification}</div>
