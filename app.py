@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 # ========================================
-# CSS للشكل الاحترافي
+# CSS للشكل الاحترافي (متوافق مع Dark Mode)
 # ========================================
 st.markdown("""
 <style>
@@ -34,7 +34,7 @@ st.markdown("""
     .main-header p { font-size: 18px; opacity: 0.9; margin: 10px 0 0; }
     
     .result-card {
-        background: white;
+        background: var(--secondary-background-color);
         padding: 25px;
         border-radius: 15px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.08);
@@ -42,16 +42,18 @@ st.markdown("""
         border-right: 6px solid #667eea;
         font-size: 18px;
         line-height: 1.8;
+        color: var(--text-color);
     }
     
     .metric-box {
-        background: #f8f9fa;
+        background: var(--secondary-background-color);
         padding: 20px;
         border-radius: 12px;
         text-align: center;
+        border: 1px solid var(--border-color);
     }
-    .metric-box .value { font-size: 28px; font-weight: 700; color: #2d3436; }
-    .metric-box .label { font-size: 14px; color: #636e72; margin-top: 5px; }
+    .metric-box .value { font-size: 28px; font-weight: 700; color: var(--text-color); }
+    .metric-box .label { font-size: 14px; color: var(--text-color); opacity: 0.7; margin-top: 5px; }
     
     .stButton > button {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -68,36 +70,51 @@ st.markdown("""
         box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
     
-    /* تنسيق صفحة التقرير */
+    /* تنسيق صفحة التقرير (متوافق مع Dark Mode) */
     .report-page {
-        background: white;
+        background: var(--secondary-background-color);
         padding: 40px;
         border-radius: 20px;
         box-shadow: 0 8px 40px rgba(0,0,0,0.08);
-        border: 1px solid #e9ecef;
+        border: 1px solid var(--border-color);
         direction: rtl;
         text-align: right;
         font-family: 'Cairo', sans-serif;
         margin: 20px 0;
+        color: var(--text-color);
     }
     .report-page h2 {
-        color: #2d3436;
+        color: var(--text-color);
         border-bottom: 3px solid #667eea;
         padding-bottom: 15px;
         margin-bottom: 20px;
         text-align: center;
     }
+    .report-page h3 {
+        color: var(--text-color);
+        margin-top: 20px;
+    }
     .report-page hr {
-        border: 1px solid #e9ecef;
+        border: 1px solid var(--border-color);
         margin: 15px 0;
     }
     .report-page .footer {
         text-align: center;
-        color: #636e72;
+        color: var(--text-color);
+        opacity: 0.7;
         font-size: 14px;
-        border-top: 1px solid #e9ecef;
+        border-top: 1px solid var(--border-color);
         padding-top: 15px;
         margin-top: 20px;
+    }
+    .report-page ul {
+        list-style: none;
+        padding: 0;
+    }
+    .report-page ul li::before {
+        content: "• ";
+        color: #667eea;
+        font-weight: bold;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -108,20 +125,20 @@ st.markdown("""
 with st.sidebar:
     st.markdown("""
     <div style="padding: 20px 10px;">
-        <h3 style="color: #2d3436; border-bottom: 2px solid #667eea; padding-bottom: 10px;">📊 تحليل المستندات</h3>
-        <p style="color: #636e72; font-size: 14px;">تطبيق ذكي لتحليل وتلخيص المستندات النصية</p>
-        <hr>
-        <h4>⚡ الميزات</h4>
-        <ul style="color: #2d3436; font-size: 14px; list-style: none; padding: 0;">
+        <h3 style="color: #667eea; border-bottom: 2px solid #667eea; padding-bottom: 10px;">📊 تحليل المستندات</h3>
+        <p style="color: var(--text-color); opacity: 0.7; font-size: 14px;">تطبيق ذكي لتحليل وتلخيص المستندات النصية</p>
+        <hr style="border-color: var(--border-color);">
+        <h4 style="color: var(--text-color);">⚡ الميزات</h4>
+        <ul style="color: var(--text-color); font-size: 14px; list-style: none; padding: 0;">
             <li>📄 قراءة TXT, PDF, DOCX</li>
             <li>📝 تلخيص ذكي</li>
             <li>🏷️ تصنيف تلقائي</li>
             <li>📊 إحصائيات متقدمة</li>
             <li>📥 تصدير تقرير منسق</li>
         </ul>
-        <hr>
-        <h4>📌 الإصدار</h4>
-        <p style="color: #636e72; font-size: 12px;">v2.0 - AI Summarizer</p>
+        <hr style="border-color: var(--border-color);">
+        <h4 style="color: var(--text-color);">📌 الإصدار</h4>
+        <p style="color: var(--text-color); opacity: 0.7; font-size: 12px;">v2.0 - AI Summarizer</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -333,12 +350,12 @@ if uploaded_file is not None:
         """, unsafe_allow_html=True)
 
     # ========================================
-    # عرض التقرير في صفحة منفصلة
+    # عرض التقرير (متوافق مع Dark Mode)
     # ========================================
     st.markdown("---")
     st.subheader("📄 التقرير النهائي")
 
-    # بناء التقرير (كـ Markdown)
+    # بناء التقرير (كـ Markdown مع CSS متوافق)
     report_md = f"""
 <div class="report-page">
 
@@ -380,7 +397,7 @@ if uploaded_file is not None:
 </div>
 """
 
-    # عرض التقرير (مع CSS بس من غير HTML في النص)
+    # عرض التقرير
     st.markdown(report_md, unsafe_allow_html=True)
 
     # ========================================
