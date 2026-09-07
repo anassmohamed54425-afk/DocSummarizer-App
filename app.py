@@ -103,6 +103,24 @@ st.markdown("""
     .report-page .footer { text-align: center; color: var(--text-color); opacity: 0.7; font-size: 14px; border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 20px; }
     .report-page ul { list-style: none; padding: 0; }
     .report-page ul li::before { content: "• "; color: #667eea; font-weight: bold; }
+    
+    .email-card {
+        background: var(--secondary-background-color);
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        margin: 12px 0;
+        border-right: 5px solid #667eea;
+        color: var(--text-color);
+    }
+    .email-card .email-subject { font-size: 18px; font-weight: 700; }
+    .email-card .email-summary { font-size: 15px; opacity: 0.9; margin: 5px 0; }
+    .email-card .email-classification { font-size: 14px; opacity: 0.8; }
+    .email-complaint { border-right-color: #e74c3c !important; }
+    .email-inquiry { border-right-color: #3498db !important; }
+    .email-order { border-right-color: #2ecc71 !important; }
+    .email-reply { border-right-color: #f39c12 !important; }
+    .email-other { border-right-color: #95a5a6 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -121,12 +139,13 @@ with st.sidebar:
             <li>📝 تلخيص ذكي</li>
             <li>🏷️ تصنيف تلقائي</li>
             <li>📊 إحصائيات متقدمة</li>
-            <li>🧪 تحليل المعامل (ميزة جديدة)</li>
+            <li>🧪 تحليل المعامل</li>
+            <li>📧 تلخيص الإيميلات</li>
             <li>📥 تصدير تقرير منسق</li>
         </ul>
         <hr style="border-color: var(--border-color);">
         <h4 style="color: var(--text-color);">📌 الإصدار</h4>
-        <p style="color: var(--text-color); opacity: 0.7; font-size: 12px;">v2.1 - AI Summarizer + Lab Analyzer</p>
+        <p style="color: var(--text-color); opacity: 0.7; font-size: 12px;">v2.2 - AI Summarizer + Lab Analyzer + Email Summarizer</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -136,7 +155,7 @@ with st.sidebar:
 st.markdown("""
 <div class="main-header">
     <h1>📄 ملخص المستندات الذكي</h1>
-    <p>رفع ملف، تلخيص، تصنيف، وتحليل المعامل</p>
+    <p>رفع ملف، تلخيص، تصنيف، تحليل معامل، وتلخيص إيميلات</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -291,10 +310,72 @@ def extract_lab_tests(text):
     return found_tests
 
 # ========================================
+# دوال تلخيص الإيميلات
+# ========================================
+
+def extract_emails(text):
+    """استخراج الإيميلات من النص"""
+    # تقسيم النص إلى إيميلات (بافتراض أن كل إيميل يبدأ بـ From: أو Subject:)
+    email_pattern = r'(?:From|Subject|To|Date|Message)[:\s]+.*?(?=(?:From|Subject|To|Date|Message)|\Z)'
+    emails_raw = re.findall(email_pattern, text, re.DOTALL | re.IGNORECASE)
+    
+    if not emails_raw:
+        # لو مش لاقي، حاول تقسم على السطور الفارغة
+        emails_raw = re.split(r'\n\s*\n', text)
+    
+    emails = []
+    for email_text in emails_raw:
+        if len(email_text.strip()) > 20:
+            # استخراج الموضوع
+            subject_match = re.search(r'Subject[:\s]+(.*?)(?:\n|$)', email_text, re.IGNORECASE)
+            subject = subject_match.group(1).strip() if subject_match else "بدون موضوع"
+            
+            # استخراج النص الأساسي (شيل الرأس)
+            body = re.sub(r'(From|Subject|To|Date|Message)[:\s]+.*?\n', '', email_text, flags=re.IGNORECASE)
+            body = body.strip()
+            
+            if body:
+                emails.append({
+                    "subject": subject,
+                    "body": body,
+                    "full_text": email_text.strip()
+                })
+    
+    return emails
+
+def classify_email(text):
+    """تصنيف الإيميل (شكوى، استفسار، طلب، رد، إلخ)"""
+    text_lower = text.lower()
+    
+    complaint_keywords = ['شكوى', 'مشكلة', 'خطأ', 'تأخر', 'سيء', 'غير راض', 'فشل', 'عطل']
+    inquiry_keywords = ['استفسار', 'سؤال', 'استعلام', 'عندي سؤال', 'أريد معرفة', 'كيف']
+    order_keywords = ['طلب', 'شراء', 'أريد', 'احتياج', 'تسجيل', 'اشتراك', 'حجز']
+    reply_keywords = ['رد', 'شكراً', 'تم الاستلام', 'حسناً', 'ممتاز', 'تمام']
+    
+    for word in complaint_keywords:
+        if word in text_lower:
+            return "شكوى", "email-complaint"
+    for word in order_keywords:
+        if word in text_lower:
+            return "طلب شراء", "email-order"
+    for word in inquiry_keywords:
+        if word in text_lower:
+            return "استفسار", "email-inquiry"
+    for word in reply_keywords:
+        if word in text_lower:
+            return "رد", "email-reply"
+    
+    return "أخرى", "email-other"
+
+def summarize_email(text, num_sentences=3):
+    """تلخيص الإيميل"""
+    return summarize_text(text, num_sentences)
+
+# ========================================
 # واجهة المستخدم (تبويبات)
 # ========================================
 
-tab1, tab2 = st.tabs(["📝 تلخيص وتصنيف", "🧪 تحليل المعامل"])
+tab1, tab2, tab3 = st.tabs(["📝 تلخيص وتصنيف", "🧪 تحليل المعامل", "📧 تلخيص الإيميلات"])
 
 # ========================================
 # التبويب الأول: تلخيص وتصنيف
@@ -443,7 +524,7 @@ with tab1:
 
 <div class="footer">
 ✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي<br>
-📌 v2.1 - AI Summarizer + Lab Analyzer
+📌 v2.2 - AI Summarizer + Lab Analyzer + Email Summarizer
 </div>
 
 </div>
@@ -487,7 +568,7 @@ with tab1:
         ──────────────────────────────────────────────────────────────────
 
         ✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي
-        📌 v2.1 - AI Summarizer + Lab Analyzer
+        📌 v2.2 - AI Summarizer + Lab Analyzer + Email Summarizer
         ═══════════════════════════════════════════════════════════════════
         """
 
@@ -628,7 +709,7 @@ with tab2:
         report_lines.append("  " + "-" * 60)
         report_lines.append("")
         report_lines.append("  ✅ تم إنشاء التقرير بواسطة تطبيق تحليل المعامل الذكي")
-        report_lines.append("  📌 v2.1 - Lab Analyzer")
+        report_lines.append("  📌 v2.2 - Lab Analyzer")
         report_lines.append("")
         report_lines.append("=" * 65)
 
@@ -643,3 +724,140 @@ with tab2:
 
     else:
         st.info("⏳ انتظر رفع ملف تقرير معمل لتحليله")
+
+# ========================================
+# التبويب الثالث: تلخيص الإيميلات
+# ========================================
+with tab3:
+    st.markdown("""
+    <div style="background: var(--secondary-background-color); padding: 15px; border-radius: 10px; border-right: 4px solid #667eea; margin-bottom: 20px;">
+        <h4 style="margin: 0; color: var(--text-color);">📧 تلخيص الإيميلات</h4>
+        <p style="margin: 5px 0 0; color: var(--text-color); opacity: 0.7; font-size: 14px;">ارفع ملف إيميلات، وسيتم استخراج وتلخيص وتصنيف كل إيميل</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    uploaded_file_email = st.file_uploader("📂 اختر ملف إيميلات", type=["txt", "pdf", "docx"], key="email")
+
+    if uploaded_file_email is not None:
+        try:
+            text = read_file(uploaded_file_email)
+        except Exception as e:
+            st.error(f"❌ مشكلة في قراءة الملف: {str(e)}")
+            st.stop()
+
+        clean_text_content = clean_text(text)
+
+        with st.expander("📄 النص الأصلي"):
+            st.text(clean_text_content[:1000] + ("..." if len(clean_text_content) > 1000 else ""))
+
+        # ========================================
+        # استخراج الإيميلات
+        # ========================================
+        st.markdown("---")
+        st.subheader("📧 الإيميلات المستخرجة")
+
+        emails = extract_emails(clean_text_content)
+
+        if not emails:
+            st.warning("⚠️ لم يتم العثور على إيميلات في هذا الملف.")
+        else:
+            email_summaries = []
+            for i, email in enumerate(emails):
+                # تلخيص الإيميل
+                summary = summarize_email(email['body'], num_sentences=3)
+                # تصنيف الإيميل
+                classification, class_name = classify_email(email['body'])
+                
+                email_summaries.append({
+                    "number": i + 1,
+                    "subject": email['subject'],
+                    "summary": summary,
+                    "classification": classification,
+                    "class_name": class_name
+                })
+                
+                st.markdown(f"""
+                <div class="email-card {class_name}">
+                    <div class="email-subject">📧 {email['subject']}</div>
+                    <div class="email-summary"><strong>📝 الملخص:</strong> {summary}</div>
+                    <div class="email-classification"><strong>🏷️ التصنيف:</strong> {classification}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            # ========================================
+            # إحصائيات الإيميلات
+            # ========================================
+            st.markdown("---")
+            st.subheader("📊 ملخص الإيميلات")
+
+            total = len(emails)
+            classifications = {}
+            for es in email_summaries:
+                classifications[es['classification']] = classifications.get(es['classification'], 0) + 1
+
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown(f"""
+                <div class="metric-box">
+                    <div class="value">{total}</div>
+                    <div class="label">إجمالي الإيميلات</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col2:
+                st.markdown(f"""
+                <div class="metric-box">
+                    <div class="value" style="font-size: 20px;">{', '.join([f"{k}: {v}" for k, v in classifications.items()])}</div>
+                    <div class="label">التصنيفات</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+        # ========================================
+        # تحميل تقرير الإيميلات
+        # ========================================
+        st.markdown("---")
+        st.subheader("📥 تحميل تقرير الإيميلات")
+
+        report_lines = []
+        report_lines.append("=" * 65)
+        report_lines.append("              📧 تقرير تلخيص الإيميلات")
+        report_lines.append("=" * 65)
+        report_lines.append("")
+        report_lines.append(f"  📅 التاريخ          :  {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        report_lines.append("  " + "-" * 60)
+        report_lines.append("")
+
+        if emails:
+            for es in email_summaries:
+                report_lines.append(f"  📧 الإيميل {es['number']}: {es['subject']}")
+                report_lines.append(f"     الملخص: {es['summary']}")
+                report_lines.append(f"     التصنيف: {es['classification']}")
+                report_lines.append("")
+        else:
+            report_lines.append("  ⚠️ لم يتم العثور على إيميلات في هذا الملف.")
+            report_lines.append("")
+
+        report_lines.append("  " + "-" * 60)
+        report_lines.append("")
+        report_lines.append("  ✅ تم إنشاء التقرير بواسطة تطبيق تلخيص الإيميلات الذكي")
+        report_lines.append("  📌 v2.2 - Email Summarizer")
+        report_lines.append("")
+        report_lines.append("=" * 65)
+
+        report_text = "\n".join(report_lines)
+
+        st.download_button(
+            label="📥 تحميل تقرير الإيميلات (TXT)",
+            data=report_text,
+            file_name=f"تقرير_إيميلات_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+            mime="text/plain"
+        )
+
+    else:
+        st.info("⏳ انتظر رفع ملف إيميلات لتحليله")
+        st.markdown("""
+        ### 🚀 طريقة الاستخدام:
+        1. اضغط على زر **"اختر ملف إيميلات"**
+        2. اختر ملف `.txt` أو `.pdf` أو `.docx`
+        3. انتظر لحظات وستظهر الإيميلات مع التلخيص والتصنيف
+        4. يمكنك تحميل التقرير
+        """)
