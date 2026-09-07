@@ -9,31 +9,40 @@ from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import datetime
-import nltk
-from nltk.tokenize import sent_tokenize
-from nltk.corpus import stopwords
-from collections import Counter
-import heapq
-
-# تحميل بيانات NLTK
-import ssl
-
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    pass
-else:
-    ssl._create_default_https_context = _create_unverified_https_context
-
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-    nltk.download('stopwords')
-    nltk.download('punkt_tab')
 
 # ========================================
-# دوال التلخيص والتصنيف (خفيفة)
+# إعدادات الصفحة
+# ========================================
+st.set_page_config(
+    page_title="ملخص المستندات الذكي",
+    page_icon="📄",
+    layout="wide"
+)
+
+st.markdown("""
+<style>
+    .main-header {
+        background: linear-gradient(135deg, #4A6CF7, #6C4AF7);
+        padding: 30px;
+        border-radius: 15px;
+        text-align: center;
+        color: white;
+        margin-bottom: 30px;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="main-header">
+    <h1 style="font-size: 40px; margin: 0;">📄 ملخص المستندات الذكي</h1>
+    <p style="font-size: 18px; opacity: 0.9; margin: 10px 0 0;">
+        رفع ملف، تلخيص، تصنيف، وتقرير PDF
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+# ========================================
+# دوال التنظيف والتحليل
 # ========================================
 
 def clean_text(text):
@@ -59,32 +68,24 @@ def read_file(uploaded_file):
     else:
         return content.decode("utf-8")
 
+# ========================================
+# دالة التلخيص (من غير NLTK)
+# ========================================
 def summarize_text(text, num_sentences=4):
-    sentences = sent_tokenize(text)
+    # تقسيم النص على النقاط والفواصل وعلامات الاستفهام
+    sentences = re.split(r'[.!؟]+', text)
+    sentences = [s.strip() for s in sentences if len(s.strip()) > 10]
+    
     if len(sentences) <= num_sentences:
         return text
     
-    stop_words = set(stopwords.words('arabic') + stopwords.words('english'))
-    word_freq = Counter()
-    for sentence in sentences:
-        words = re.findall(r'\w+', sentence.lower())
-        for word in words:
-            if word not in stop_words:
-                word_freq[word] += 1
-    
-    max_freq = max(word_freq.values()) if word_freq else 1
-    for word in word_freq:
-        word_freq[word] = word_freq[word] / max_freq
-    
-    sentence_scores = {}
-    for sentence in sentences:
-        words = re.findall(r'\w+', sentence.lower())
-        score = sum(word_freq.get(word, 0) for word in words)
-        sentence_scores[sentence] = score
-    
-    summarized_sentences = heapq.nlargest(num_sentences, sentence_scores, key=sentence_scores.get)
-    return ' '.join(summarized_sentences)
+    # اختيار أول num_sentences جمل
+    summary = '. '.join(sentences[:num_sentences]) + '.'
+    return summary
 
+# ========================================
+# دالة التصنيف (بالكلمات المفتاحية)
+# ========================================
 def classify_text(text):
     categories = {
         "مالي": ["مال", "اقتصاد", "بنك", "استثمار", "سوق", "أسهم", "دولار", "ربح", "خسارة", "ضريبة"],
@@ -117,32 +118,69 @@ def classify_text(text):
     return best_category, min(confidence, 0.95)
 
 # ========================================
-# واجهة Streamlit
+# دالة إنشاء PDF
 # ========================================
-st.set_page_config(page_title="ملخص المستندات الذكي", page_icon="📄", layout="wide")
+def create_pdf(text, summary, label, score, word_count, char_count, sentence_count):
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    
+    try:
+        pdfmetrics.registerFont(TTFont('ArialUnicode', 'ArialUnicodeMS.ttf'))
+        font_name = 'ArialUnicode'
+    except:
+        font_name = 'Helvetica'
+    
+    c.setFont(font_name, 20)
+    c.drawString(2*cm, height - 2*cm, "تقرير تحليل المستند")
+    c.line(2*cm, height - 2.5*cm, width - 2*cm, height - 2.5*cm)
+    
+    c.setFont(font_name, 12)
+    c.drawString(2*cm, height - 3.5*cm, f"التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    
+    c.setFont(font_name, 14)
+    c.drawString(2*cm, height - 5*cm, f"التصنيف: {label}")
+    c.drawString(2*cm, height - 6*cm, f"نسبة الثقة: {score:.2%}")
+    c.drawString(2*cm, height - 7*cm, f"عدد الكلمات: {word_count}")
+    c.drawString(2*cm, height - 8*cm, f"عدد الأحرف: {char_count}")
+    c.drawString(2*cm, height - 9*cm, f"عدد الجمل: {sentence_count}")
+    
+    c.setFont(font_name, 12)
+    c.drawString(2*cm, height - 11*cm, "الملخص:")
+    
+    y = height - 12*cm
+    for line in summary.split('\n'):
+        if y < 2*cm:
+            c.showPage()
+            y = height - 2*cm
+        if len(line) > 80:
+            line = line[:80] + "..."
+        c.drawString(2*cm, y, line)
+        y -= 0.6*cm
+    
+    c.setFont(font_name, 10)
+    c.drawString(2*cm, y - 1*cm, "النص الأصلي (مختصر):")
+    y -= 1.5*cm
+    
+    for line in text[:500].split('\n'):
+        if y < 2*cm:
+            c.showPage()
+            y = height - 2*cm
+        if len(line) > 80:
+            line = line[:80] + "..."
+        c.drawString(2*cm, y, line)
+        y -= 0.5*cm
+    
+    c.setFont(font_name, 10)
+    c.drawString(2*cm, 2*cm, "تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي")
+    
+    c.save()
+    buffer.seek(0)
+    return buffer
 
-st.markdown("""
-<style>
-    .main-header {
-        background: linear-gradient(135deg, #4A6CF7, #6C4AF7);
-        padding: 30px;
-        border-radius: 15px;
-        text-align: center;
-        color: white;
-        margin-bottom: 30px;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-<div class="main-header">
-    <h1 style="font-size: 40px; margin: 0;">📄 ملخص المستندات الذكي</h1>
-    <p style="font-size: 18px; opacity: 0.9; margin: 10px 0 0;">
-        رفع ملف، تلخيص، تصنيف، وتقرير PDF
-    </p>
-</div>
-""", unsafe_allow_html=True)
-
+# ========================================
+# واجهة المستخدم
+# ========================================
 uploaded_file = st.file_uploader("📂 اختر ملف", type=["txt", "pdf", "docx"])
 
 if uploaded_file is not None:
@@ -157,6 +195,9 @@ if uploaded_file is not None:
     with st.expander("📄 النص الأصلي"):
         st.text(clean_text_content[:1000] + ("..." if len(clean_text_content) > 1000 else ""))
 
+    # ========================================
+    # التلخيص
+    # ========================================
     st.divider()
     st.subheader("📝 الملخص")
 
@@ -174,6 +215,9 @@ if uploaded_file is not None:
 
     st.write(summary)
 
+    # ========================================
+    # التصنيف
+    # ========================================
     st.divider()
     st.subheader("🏷️ التصنيف")
 
@@ -192,6 +236,9 @@ if uploaded_file is not None:
     with col2:
         st.metric("نسبة الثقة", f"{score:.2%}")
 
+    # ========================================
+    # إحصائيات
+    # ========================================
     st.divider()
     st.subheader("📊 إحصائيات")
 
@@ -207,6 +254,9 @@ if uploaded_file is not None:
     with col3:
         st.metric("عدد الجمل", sentence_count)
 
+    # ========================================
+    # تحميل التقرير
+    # ========================================
     st.divider()
     st.subheader("📥 تحميل التقرير")
 
@@ -236,64 +286,6 @@ if uploaded_file is not None:
     ✅ تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي
     ═══════════════════════════════════════════════════════════════
     """
-
-    def create_pdf(text, summary, label, score, word_count, char_count, sentence_count):
-        buffer = io.BytesIO()
-        c = canvas.Canvas(buffer, pagesize=A4)
-        width, height = A4
-        
-        try:
-            pdfmetrics.registerFont(TTFont('ArialUnicode', 'ArialUnicodeMS.ttf'))
-            font_name = 'ArialUnicode'
-        except:
-            font_name = 'Helvetica'
-        
-        c.setFont(font_name, 20)
-        c.drawString(2*cm, height - 2*cm, "تقرير تحليل المستند")
-        c.line(2*cm, height - 2.5*cm, width - 2*cm, height - 2.5*cm)
-        
-        c.setFont(font_name, 12)
-        c.drawString(2*cm, height - 3.5*cm, f"التاريخ: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
-        
-        c.setFont(font_name, 14)
-        c.drawString(2*cm, height - 5*cm, f"التصنيف: {label}")
-        c.drawString(2*cm, height - 6*cm, f"نسبة الثقة: {score:.2%}")
-        c.drawString(2*cm, height - 7*cm, f"عدد الكلمات: {word_count}")
-        c.drawString(2*cm, height - 8*cm, f"عدد الأحرف: {char_count}")
-        c.drawString(2*cm, height - 9*cm, f"عدد الجمل: {sentence_count}")
-        
-        c.setFont(font_name, 12)
-        c.drawString(2*cm, height - 11*cm, "الملخص:")
-        
-        y = height - 12*cm
-        for line in summary.split('\n'):
-            if y < 2*cm:
-                c.showPage()
-                y = height - 2*cm
-            if len(line) > 80:
-                line = line[:80] + "..."
-            c.drawString(2*cm, y, line)
-            y -= 0.6*cm
-        
-        c.setFont(font_name, 10)
-        c.drawString(2*cm, y - 1*cm, "النص الأصلي (مختصر):")
-        y -= 1.5*cm
-        
-        for line in text[:500].split('\n'):
-            if y < 2*cm:
-                c.showPage()
-                y = height - 2*cm
-            if len(line) > 80:
-                line = line[:80] + "..."
-            c.drawString(2*cm, y, line)
-            y -= 0.5*cm
-        
-        c.setFont(font_name, 10)
-        c.drawString(2*cm, 2*cm, "تم إنشاء التقرير بواسطة تطبيق ملخص المستندات الذكي")
-        
-        c.save()
-        buffer.seek(0)
-        return buffer
 
     col1, col2 = st.columns(2)
     
